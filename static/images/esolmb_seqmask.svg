@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="2340.4623 112.01078 642.4724 330.3656" width="642.4724" height="330.3656">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="2340.4623 78.57158 642.4724 363.8048" width="642.4724" height="363.8048">
   <defs/>
   <g id="Canvas_1" fill="none" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1">
     <title>Canvas 1</title>
-    <rect fill="white" x="2340.4623" y="112.01078" width="642.4724" height="330.3656"/>
+    <rect fill="white" x="2340.4623" y="78.57158" width="642.4724" height="363.8048"/>
     <g id="Canvas_1_Layer_1">
       <title>Layer 1</title>
       <g id="Graphic_4917">
@@ -1707,6 +1707,18 @@
       <g id="Graphic_4532">
         <rect x="2570.5402" y="278.16813" width="21.856" height="21.856" fill="#f9ca9c"/>
         <rect x="2570.5402" y="278.16813" width="21.856" height="21.856" stroke="#43ba01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      </g>
+      <g id="Graphic_5041">
+        <rect x="2432.9122" y="78.57158" width="178" height="39.725174" fill="white"/>
+        <text transform="translate(2437.9122 83.57158)" fill="black">
+          <tspan font-family="Helvetica Neue" font-weight="bold" font-size="25" fill="black" x="0" y="24">Original Order</tspan>
+        </text>
+      </g>
+      <g id="Graphic_5042">
+        <rect x="2764.7154" y="78.57158" width="164.675" height="39.725174" fill="white"/>
+        <text transform="translate(2769.7154 83.57158)" fill="black">
+          <tspan font-family="Helvetica Neue" font-weight="bold" font-size="25" fill="black" x="0" y="24">Sorted Order</tspan>
+        </text>
       </g>
     </g>
   </g>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="2358.3587 -401.75755 625.1031 311.60234" width="625.1031" height="311.60234">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="2358.3587 -438 625.1031 347.8448" width="625.1031" height="347.8448">
   <defs/>
   <g id="Canvas_1" fill="none" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1">
     <title>Canvas 1</title>
-    <rect fill="white" x="2358.3587" y="-401.75755" width="625.1031" height="311.60234"/>
+    <rect fill="white" x="2358.3587" y="-438" width="625.1031" height="347.8448"/>
     <g id="Canvas_1_Layer_1">
       <title>Layer 1</title>
       <g id="Graphic_5040">
@@ -557,6 +557,18 @@
         <rect x="2825.6822" y="-368.6969" width="29.970206" height="29.46411" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
         <text transform="translate(2830.6822 -363.6969)" fill="black">
           <tspan font-family="Helvetica Neue" font-weight="bold" font-size="16" fill="black" x="5.2411027" y="16">F</tspan>
+        </text>
+      </g>
+      <g id="Graphic_5044">
+        <rect x="2454.008" y="-438" width="178" height="39.725174" fill="white"/>
+        <text transform="translate(2459.008 -433)" fill="black">
+          <tspan font-family="Helvetica Neue" font-weight="bold" font-size="25" fill="black" x="0" y="24">Original Order</tspan>
+        </text>
+      </g>
+      <g id="Graphic_5043">
+        <rect x="2779.9618" y="-438" width="164.675" height="39.725174" fill="white"/>
+        <text transform="translate(2784.9618 -433)" fill="black">
+          <tspan font-family="Helvetica Neue" font-weight="bold" font-size="25" fill="black" x="0" y="24">Sorted Order</tspan>
         </text>
       </g>
     </g>
