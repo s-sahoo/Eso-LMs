@@ -222,7 +222,7 @@
           </li>
   <li>
     Ours is the <strong>first approach to enable KV caching for MDMs</strong> without semi-autoregressive generation, achieving up to 
-    <strong>40×</strong> faster inference than standard MDMs and <strong>4–5×</strong> faster inference than KV-cached semi-autoregressive baselines.
+    <strong>40× faster inference</strong> than standard MDMs and <strong>4–5× faster inference</strong> than KV-cached semi-autoregressive baselines.
   </li>
   <li>
     We show that BD3-LMs degrade at low sampling steps, while our method remains competitive with MDMs in the low NFE regime and with AR in the high NFE regime.
@@ -365,7 +365,7 @@ Due to the unconventional nature of this hybrid design, we name our method <b>Es
     
     <p>
     <b>Sequential Phase. </b>
-    The denoising transformer receives \( \mathbf{z}_0 \oplus \mathbf{x} \in \mathcal{V}^{2L} \), where \( \mathbf{z}_0 \sim q_0(.|\mathbf{x})\) contains the mask tokens to denoise, and computes loss by comparing the transformer output over \( \mathbf{z}_0 \) against target \( \mathbf{x} \). Concatenating \( \mathbf{z}_0 \) and \( \mathbf{x} \) at input is required during training because we do not use shift-by-one at the output like AR models. A random ordering \( \sigma \sim \mathcal{P}_L \) is sampled with the constraints that (i) clean tokens in \(\mathbf{z}_0\) precede mask tokens in \(\mathbf{z}_0\) in \(\sigma\) and (2) mask tokens are in natural order in \( \sigma \). Below is the example attention mask and its sorted version for implementation when \( \mathbf{x} = (A, B, C, D, E, F) \), \( \mathbf{z}_t = (A, M, C, M, M, F) \), and \( \sigma = (3, 1, 6, 2, 4, 5) \):
+    The denoising transformer receives \( \mathbf{z}_0 \oplus \mathbf{x} \in \mathcal{V}^{2L} \), where \( \mathbf{z}_0 \sim q_0(.|\mathbf{x})\) contains the mask tokens to denoise, and computes loss by comparing the transformer output over \( \mathbf{z}_0 \) against target \( \mathbf{x} \). Concatenating \( \mathbf{z}_0 \) and \( \mathbf{x} \) at input is required during training because we do not use shift-by-one at the output like AR models. A random ordering \( \sigma \sim \mathcal{P}_L \) is sampled with the constraints that (i) clean tokens in \(\mathbf{z}_0\) precede mask tokens in \(\mathbf{z}_0\) in \(\sigma\) and (2) mask tokens are in natural order in \( \sigma \). Below is the example attention mask and its sorted version for implementation when \( \mathbf{x} = (A, B, C, D, E, F) \), \( \mathbf{z}_0 = (A, M, C, M, M, F) \), and \( \sigma = (3, 1, 6, 2, 4, 5) \):
 	</p>
     
     <div style="text-align: center;">
