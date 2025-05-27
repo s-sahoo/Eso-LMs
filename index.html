@@ -1,470 +1,408 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
-  <!-- Replace the content tag with appropriate information -->
-  <meta name="description" content="Esoteric Language Models">
-  <meta property="og:title" content="Eso-LMs"/>
-  <meta property="og:description" content="Esoteric Language Models"/>
-  <meta property="og:url" content="https://s-sahoo.com/Eso-LMs"/>
-  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
-  <meta property="og:image" content="static/images/Graphical abstract (EsoLM-B)" />
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="630"/>
-
-
-  <meta name="twitter:title" content="Esoteric Language Models">
-  <meta name="twitter:description" content="TWITTER BANNER DESCRIPTION META TAG">
-  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
-  <meta name="twitter:image" content="static/images/Graphical abstract (EsoLM-B)">
-  <meta name="twitter:card" content="summary_large_image">
-  <!-- Keywords for your paper to be indexed by-->
-  <meta name="keywords" content="Esoteric Language Models Diffusion Language Models">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-
-  <title>Esoteric Language Models</title>
-  <link rel="icon" type="image/x-icon" href="static/images/ganeshafavicon.ico">
-  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
-  rel="stylesheet">
-
-  <link rel="stylesheet" href="static/css/bulma.min.css">
-  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
-  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
-  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
-  <link rel="stylesheet"
-  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
-  <link rel="stylesheet" href="static/css/index.css">
-
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
-  <script defer src="static/js/fontawesome.all.min.js"></script>
-  <script src="static/js/bulma-carousel.min.js"></script>
-  <script src="static/js/bulma-slider.min.js"></script>
-  <script src="static/js/index.js"></script>
-  <script type="text/javascript" async
-  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
-</head>
-<body>
-
-
-  <section class="hero">
-    <div class="hero-body">
-      <div class="container is-max-desktop">
-        <div class="columns is-centered">
-          <div class="column has-text-centered">
-            <h1 class="title is-1 publication-title">Esoteric Language Models</h1>
-            <div class="is-size-5 publication-authors">
-              <!-- Paper authors -->
-              <span class="author-block">
-                <a href="https://s-sahoo.github.io" target="_blank"><b >Subham Sekhar Sahoo</b><sup>*1</sup></a>,</span>
-                <span class="author-block">
-                  <a href="https://zhihanyang2022.github.io" target="_blank"><b>Zhihan Yang</b><sup>*2</sup></a>,</span>
-                  <span class="author-block">
-                    <a href="https://akhauriyash.github.io/" target="_blank">Yash Akhauri<sup>†1</sup></a>,</span>
-                      <span class="author-block">
+   <head>
+      <meta charset="utf-8">
+      <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
+      <!-- Replace the content tag with appropriate information -->
+      <meta name="description" content="Esoteric Language Models">
+      <meta property="og:title" content="Eso-LMs"/>
+      <meta property="og:description" content="Esoteric Language Models"/>
+      <meta property="og:url" content="https://s-sahoo.com/Eso-LMs"/>
+      <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+      <meta property="og:image" content="static/images/Graphical abstract (EsoLM-B)" />
+      <meta property="og:image:width" content="1200"/>
+      <meta property="og:image:height" content="630"/>
+      <meta name="twitter:title" content="Esoteric Language Models">
+      <meta name="twitter:description" content="TWITTER BANNER DESCRIPTION META TAG">
+      <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
+      <meta name="twitter:image" content="static/images/Graphical abstract (EsoLM-B)">
+      <meta name="twitter:card" content="summary_large_image">
+      <!-- Keywords for your paper to be indexed by-->
+      <meta name="keywords" content="Esoteric Language Models Diffusion Language Models">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Esoteric Language Models</title>
+      <link rel="icon" type="image/x-icon" href="static/images/ganeshafavicon.ico">
+      <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+         rel="stylesheet">
+      <link rel="stylesheet" href="static/css/bulma.min.css">
+      <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+      <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+      <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+      <link rel="stylesheet"
+         href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+      <link rel="stylesheet" href="static/css/index.css">
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+      <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+      <script defer src="static/js/fontawesome.all.min.js"></script>
+      <script src="static/js/bulma-carousel.min.js"></script>
+      <script src="static/js/bulma-slider.min.js"></script>
+      <script src="static/js/index.js"></script>
+      <script type="text/javascript" async
+         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+   </head>
+   <body>
+      <section class="hero">
+         <div class="hero-body">
+            <div class="container is-max-desktop">
+               <div class="columns is-centered">
+                  <div class="column has-text-centered">
+                     <h1 class="title is-1 publication-title">Esoteric Language Models</h1>
+                     <div class="is-size-5 publication-authors">
+                        <!-- Paper authors -->
+                        <span class="author-block">
+                        <a href="https://s-sahoo.github.io" target="_blank"><b >Subham Sekhar Sahoo</b><sup>*1</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="https://zhihanyang2022.github.io" target="_blank"><b>Zhihan Yang</b><sup>*2</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="https://akhauriyash.github.io/" target="_blank">Yash Akhauri<sup>†1</sup></a>,</span>
+                        <span class="author-block">
                         <a href="https://www.guanghanwang.com" target="_blank">Johnna Liu<sup>†1</sup></a>,</span>
                         <span class="author-block">
-                          <a href="https://deepansha.com/" target="_blank">Deepansha Singh<sup>†1</sup></a>,</span>
-                            <span class="author-block">
-                              <a href="https://blankcheng.github.io/" target="_blank">Zhoujun Cheng<sup>†3</sup></a>,</span>
-                              <span class="author-block">
-                                <a href="https://hunterhector.github.io/" target="_blank">Zhengzhong Liu<sup>3</sup></a>,</span>
-                                <span class="author-block">
-                                  <a href="https://www.cs.cmu.edu/~epxing/" target="_blank">Eric Xing<sup>3</sup></a>,</span>
-                                  <span class="author-block">
-                                    <a href="https://johnthickstun.com/" target="_blank">John Thickstun<sup>2</sup></a>,</span>
-                                    <span class="author-block">
-                                      <a href="http://latentspace.cc" target="_blank">Arash Vahdat<sup>4</sup></a></span>
+                        <a href="https://deepansha.com/" target="_blank">Deepansha Singh<sup>†1</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="https://blankcheng.github.io/" target="_blank">Zhoujun Cheng<sup>†3</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="https://hunterhector.github.io/" target="_blank">Zhengzhong Liu<sup>3</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="https://www.cs.cmu.edu/~epxing/" target="_blank">Eric Xing<sup>3</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="https://johnthickstun.com/" target="_blank">John Thickstun<sup>2</sup></a>,</span>
+                        <span class="author-block">
+                        <a href="http://latentspace.cc" target="_blank">Arash Vahdat<sup>4</sup></a></span>
+                     </div>
+                     <div class="is-size-5 publication-authors">
+                        <span class="author-block">
+                           <sup>1</sup>Cornell Tech &nbsp;&nbsp;&nbsp;
+                           <sup>2</sup>Cornell University &nbsp;&nbsp;&nbsp;
+                           <sup>3</sup>MBZUAI &nbsp;&nbsp;&nbsp;
+                           <sup>4</sup>NVIDIA
+                           <br> <b >Pre-print 2025</b>
+                           <br> <sup>*</sup>Joint first authors &nbsp;&nbsp;&nbsp; <sup>†</sup>Joint second authors
+                           <!-- <br> <b >[The blog-post will be ready by April 19, 2025.]</b> -->
+                        </span>
+                     </div>
+                     <div class="column has-text-centered">
+                        <div class="publication-links">
+                           <!-- ArXiv abstract Link -->
+                           <span class="link-block">
+                           <a href="https://openreview.net/forum?id=CB0Ub2yXjC" target="_blank"
+                              class="external-link button is-normal is-rounded is-dark">
+                           <span class="icon">
+                           <i class="ai ai-arxiv"></i>
+                           </span>
+                           <span>arXiv</span>
+                           </a>
+                           </span>
+                           <!-- YouTube Link -->
+                           <!-- <span class="link-block">
+                              <a href="https://youtu.be/WjAUX23vgfg?si=9iZIeclrpY1P5e95" target="_blank"
+                              class="external-link button is-normal is-rounded is-dark">
+                              <span class="icon">
+                                <i class="fab fa-youtube" style="color: #cb422a;"></i>
+                                </span>
+                                <span>YouTube</span>
+                              </a>
+                              </span> -->
+                           <!-- Github link -->
+                           <span class="link-block">
+                           <a href="https://github.com/s-sahoo/Eso-LMs" target="_blank"
+                              class="external-link button is-normal is-rounded is-dark">
+                           <span class="icon">
+                           <i class="fab fa-github"></i>
+                           </span>
+                           <span>Code</span>
+                           </a>
+                           </span>
+                           <!-- Google Colab Link -->
+                           <span class="link-block">
+                           <a href="https://colab.research.google.com/drive/1Mh9IwVw-o8zYnYlPT1zL0BTM7I2MUseF?usp=sharing" target="_blank"
+                              class="external-link button is-normal is-rounded is-dark">
+                           <span class="icon">
+                           <img src="https://colab.research.google.com/img/colab_favicon.ico" alt="Colab Logo" style="width: 18px; height: 18px;">
+                           </span>
+                           <span>Colab</span>
+                           </a>
+                           </span>
+                           <!-- HuggingFace link -->
+                           <span class="link-block">
+                              <a href="https://huggingface.co/collections/s-sahoo/duo-67f9ff8fde919224e5fbd875" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                                 <span class="icon">
+                                    <p>&#129303;</p>
+                                 </span>
+                                 <span>HuggingFace</span>
+                              </a>
+                           </span>
+                           <p style="text-align: center; margin-top: 20px; font-size: 24px;">
+                              <span> First paper to propose <b>KV-caching</b> for diffusion language models while retaining parallel generation.</span>
+                           </p>
+                           </a>
+                           </span>
+                           </a>
+                           </span>
+                        </div>
+                     </div>
                   </div>
-
-                  <div class="is-size-5 publication-authors">
-                    <span class="author-block">
-                      <sup>1</sup>Cornell Tech &nbsp;&nbsp;&nbsp;
-                      <sup>2</sup>Cornell University &nbsp;&nbsp;&nbsp;
-                      <sup>3</sup>MBZUAI &nbsp;&nbsp;&nbsp;
-                      <sup>4</sup>NVIDIA
-                      <br> <b >Pre-print 2025</b>
-                      <br> <sup>*</sup>Joint first authors &nbsp;&nbsp;&nbsp; <sup>†</sup>Joint second authors
-                      <!-- <br> <b >[The blog-post will be ready by April 19, 2025.]</b> -->
-                    </span>
-                    
-                  </div>
-
-                  <div class="column has-text-centered">
-                    <div class="publication-links">
-
-
-                        <!-- ArXiv abstract Link -->
-                        <span class="link-block">
-                          <a href="https://openreview.net/forum?id=CB0Ub2yXjC" target="_blank"
-                          class="external-link button is-normal is-rounded is-dark">
-                          <span class="icon">
-                            <i class="ai ai-arxiv"></i>
-                            </span>
-                            <span>arXiv</span>
-                          </a>
-                        </span>
-
-                        <!-- YouTube Link -->
-                        <!-- <span class="link-block">
-                          <a href="https://youtu.be/WjAUX23vgfg?si=9iZIeclrpY1P5e95" target="_blank"
-                          class="external-link button is-normal is-rounded is-dark">
-                          <span class="icon">
-                            <i class="fab fa-youtube" style="color: #cb422a;"></i>
-                            </span>
-                            <span>YouTube</span>
-                          </a>
-                        </span> -->
-
-                        <!-- Github link -->
-                        <span class="link-block">
-                          <a href="https://github.com/s-sahoo/Eso-LMs" target="_blank"
-                          class="external-link button is-normal is-rounded is-dark">
-                          <span class="icon">
-                            <i class="fab fa-github"></i>
-                          </span>
-                          <span>Code</span>
-                          </a>
-                        </span>
-
-                        <!-- Google Colab Link -->
-                        <span class="link-block">
-                          <a href="https://colab.research.google.com/drive/1Mh9IwVw-o8zYnYlPT1zL0BTM7I2MUseF?usp=sharing" target="_blank"
-                          class="external-link button is-normal is-rounded is-dark">
-                            <span class="icon">
-                              <img src="https://colab.research.google.com/img/colab_favicon.ico" alt="Colab Logo" style="width: 18px; height: 18px;">
-                            </span>
-                            <span>Colab</span>
-                          </a>
-                        </span>
-
-                        <!-- HuggingFace link -->
-                        <span class="link-block">
-                          <a href="https://huggingface.co/collections/s-sahoo/duo-67f9ff8fde919224e5fbd875" target="_blank" class="external-link button is-normal is-rounded is-dark">
-                            <span class="icon">
-                              <p>&#129303;</p>
-                            </span>
-                            <span>HuggingFace</span>
-                          </a>
-                        </span>
-
-                        <p style="text-align: center; margin-top: 20px; font-size: 24px;">
-                          <span> First paper to propose <b>KV-caching</b> for diffusion language models while retaining parallel generation.</span>
-                        </p>
-                        </a>
-                      </span>
-                </a>
-              </span>
+               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- Teaser video-->
-<section class="hero teaser">
-  <div class="container is-max-desktop">
-    <div class="hero-body">
-      <div style="text-align: center; margin-bottom:1cm" >
-        <img src="static/images/Graphical abstract (EsoLM-B + speed).svg" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
-      </div>
-      <h4 class="subtitle has-text-centered">
-        <u>Left:</u> Efficient generation of an example sequence with our flagship model Eso-LM (B). 
-        During the <span style="color: rgb(255, 142, 0); font-weight: bold;">Diffusion</span> Phase, 
-        Eso-LMs denoise one or more, potentially non-neighboring mask tokens 
-        (<span style="color: rgb(183, 183, 183); font-weight: bold;">M</span>) per step, just like masked diffusion models. 
-        During the <span style="color: rgb(72, 117, 44); font-weight: bold;">Sequential</span> Phase, 
-        Eso-LMs denoise the remaining mask tokens one at a time from left to right, just like autoregressive models but conditioned on left and right contexts. 
-        Eso-LM (B) allows for 
-        <strong>KV caching in both phases</strong> using 
-        <strong>a single unified KV cache</strong>: 
-        <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> bounding boxes enclose 
-        transformer cells building their KV cache; 
-        a cell becomes <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> once its KV cache is built. 
-        The sequences below the transformers depict tokens in their natural order.
-      </h4>
-      <h4 class="subtitle has-text-centered">
-        <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LM (B) achieves up to <b>40× faster inference</b>  than MDLM and <b>5× faster inference</b> than BD3-LMs.
-      </h4>
-      <!-- <img src="static/images/output.gif" width="100%" alt="A descriptive text for the GIF" > -->
-      <!-- <h4 class="subtitle has-text-centered">
-        The sample generation process begins with a sequence of all masked tokens. MDLM then replaces these masked tokens with actual tokens in a random order.
-      </h4> -->
-      <!-- <iframe width="100%" height="500"
-      src="https://www.youtube.com/embed/WjAUX23vgfg">
-      </iframe>
-      <h4 class="subtitle has-text-centered">
-        A <em>Simple and Effective</em> tutorial on our paper by <a href="https://www.youtube.com/@srush_nlp">Sasha Rush</a>.
-      </h4> -->
-    </div>
-  </div>
-</section>
-<!-- End teaser video -->
-
-
-
-<!-- Paper abstract -->
-<section class="section hero is-light">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Key Contributions:</h2>
-        <ol>
-          <li> 
-            We propose a new framework for language modeling: one that fuses AR and 
-            MDM paradigms and outperforms the previous hybrid approach, BD3-LMs.
-          </li>
-  <li>
-    Ours is the <strong>first approach to enable KV caching for MDMs</strong> while preserving parallel generation, achieving up to 
-    <strong>40× faster inference</strong> than standard MDMs and <strong>4–5× faster inference</strong> than KV-cached semi-autoregressive baselines.
-  </li>
-  <li>
-    We show that BD3-LMs degrade at low sampling steps, while our method remains competitive with MDMs in the low NFE regime and with AR in the high NFE regime.
-  </li>
-  <li>
-    Our results establish a new state-of-the-art perplexity for discrete diffusion, narrowing the gap to autoregressive models.
-  </li>
-        </ol>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- End paper abstract -->
-
-<!-- Diffusion Models -->
-<section class="section" id="DiffusionModels">
-  <div class="container is-max-desktop">
-  <div class="content is-medium">
-    <h2 class="title">Introduction</h2>
-    <p>
-    Masked diffusion models (MDMs) (e.g., <a href="https://arxiv.org/abs/2406.07524">MDLM</a>) are a compelling alternative to AR models. However, they suffer from two key limitations:
-      <ol>
-        <li><b>Inference speed</b>: Despite supporting parallel generation, MDMs are significantly slower than AR models in practice, largely due to the lack of KV caching—a crucial optimization for real-time applications like chat systems.</li>
-        <li><b>Generation quality</b>: MDMs still show a noticeable likelihood gap on more complex language modeling tasks.</li>
-      </ol>
-	</p>
-	<p>
-	Recently proposed <a href="https://arxiv.org/abs/2503.09573">BD3-LMs</a> address the speed issue by introducing a semi-autoregressive generation strategy. These models perform diffusion over fixed-length blocks of text sequentially. Because previously denoised blocks can be cached, BD3-LMs partially support KV caching and are faster than standard MDMs. However, we identify two key shortcomings in BD3-LMs: 
-	<ol>
-	  <li><b>Mode collapse at low sampling steps</b>: When the number of denoising steps is reduced for faster inference, BD3-LMs exhibit severe degradation in sample quality—worse than both AR (at high NFEs) and MDMs (at low NFEs).</li>
-	  <li><b>Incomplete caching</b>: While KV caching is possible across blocks, intra-block diffusion still lacks KV support, limiting overall speed gains.</li>
-	</ol>
-	</p>
-	<p>
-	To address these challenges, we propose a new language modeling paradigm that fuses autoregressive and masked diffusion approaches. Our model is trained with a hybrid loss—a combination of AR and MDM objectives—which allows it to interpolate smoothly between the two paradigms in terms of perplexity and sample quality. This requires two key innovations:
-	<ol>
-	  <li><b>A revised attention mechanism</b> in the denoising transformer to support both AR and MDM styles of generation.</li>
-	  <li><b>A new training and sampling procedure</b> that enables KV caching within the diffusion phase, a feature previously unavailable in MDMs.</li>
-	</ol>
-Due to the unconventional nature of this hybrid design, we name our method <b>Eso</b>teric <b>L</b>anguage <b>M</b>odels (Eso-LMs).
-	</p>
-
-    <!-- <h4 class="subtitle">Gaussiasn Diffusion</h3>-->
-     <!-- <p>[Will be completed by April 19, 2025]-->
-      <!-- Diffusion models are trained to iteratively undo a forward corruption process  q  that corrupts the clean data  $\mathbf{x} \in \mathbb{R}^{n}$  by adding Gaussian noise. In the reverse generation process, the trained model iteratively denoises the Gaussian noise to generate clean inputs that correspond to the input data distribution. -->
-    
-    <!-- Discrete Diffusion -->
-    <!--<h4 class="subtitle">Discrete Diffusion</h3>-->
-    <!-- <p>[Will be completed by April 19, 2025]-->
-      <!-- Applications of diffusion modeling to discrete data can be categorized into two broad areas. The first involves embedding discrete structures in continuous space and then performing the Gaussian diffusion defined above on these continuous representations. More related to our method are works that define a diffusion process directly on discrete structures. <a href="https://arxiv.org/abs/2107.03006">D3PM </a> introduces a framework with a Markov forward process \( q(z_t|z_{t−1}) = \text{Cat}(z_t; Q_t z_{t−1}) \), defined by the multiplication of matrices \( Q_t \in \mathbb{R}^{n \times n} \) over \( T \) discrete time steps. The matrix \( Q_t \) is designed such that \( Q_T \cdot Q_{T-1} \cdots Q_1 \mathbf{x} \) converges to a stationary distribution. -->
-  </div>
-  </div>
-
-</section>
-<!-- End Diffusion Models -->
-
-<!-- Simple Masked Diffusion Models -->
-<section class="section" id="DiffusionDuality">
-  <div class="container is-max-desktop">
-  <div class="content is-medium">
-    <h2 class="title">Esoteric Language Models</h2>
-    <p>
-    In Eso-LMs, some tokens are generated in parallel via MDMs and the rest sequentially in a left-to-right fashion. Here we introduce the variant Eso-LM (B). Refer to our paper for the other variant Eso-LM (A).
-    </p>    
-    <h4>Objective for training: ELBO</h4>
-    
-    <p>
-    Let \( \mathcal{V} \) be the set of one-hot vectors corresponding to the tokens so that \( |\mathcal{V}| \) is the vocabulary size. Let \( L \) denote the sequence length.
-  Let \( \mathbf{x} \sim q_{\text{data}}(\mathbf{x}) \) in \( \mathcal{V}^L \) be a sample from the data distribution, 
-  and let \( p_\theta \) be our model distribution parameterized by \( \theta \). 
-  Eso-LMs decompose \( p_\theta \) into two components: an AR model \( p_\theta^{\text{AR}} \) and an MDM 
-  \( p_\theta^{\text{MDM}} \). The MDM generates a partially masked sequence \( \mathbf{z}_0 \in \mathcal{V}^L \sim p_\theta^{\text{MDM}}(\mathbf{z}_0) \), 
-  and the AR model finishes the remaining unmasking steps in an auto-regressive left-to-right manner: 
-  \( p_\theta^{\text{AR}}(\mathbf{x} \mid \mathbf{z}_0) \).
-</p>
-
-	<p> The marginal likelihood of such a hybrid generative process is:
-	</p>
-
-<p style="text-align: center;">
-  \( p_\theta(\mathbf{x}) = \sum_{\mathbf{z}_0 \in \mathcal{V}^L} p_\theta^{\text{AR}}(\mathbf{x} \mid \mathbf{z}_0) \, p_\theta^{\text{MDM}}(\mathbf{z}_0) \).
-</p>
-
-<p>
-  Although this sum is intractable, we can compute a variational bound on the true likelihood using a 
-  posterior \( q(\mathbf{z}_0 \mid \mathbf{x}) \). 
-  Since \( p_\theta^{\text{MDM}} \) models masked sequences, we choose \( q \) to be a simple masking distribution. 
-  Specifically, our choice \( q \) independently masks 
-  each token \( (\mathbf{x}^\ell)_{\ell \in [L]} \) with probability \( 1 - \alpha_0 \), where \( \alpha_0 \in [0, 1] \). 
-  This leads to the following variational bound:
-</p>
-
-<p style="font-size: 85%;">
-  \[
-  -\log p_\theta(\mathbf{x}) \leq -\mathbb{E}_{\mathbf{z}_0 \sim q_0(\cdot \mid \mathbf{x})} 
-  \left[ \log p_\theta^{\text{AR}}(\mathbf{x} \mid \mathbf{z}_0) \right] 
-  + D_{\text{KL}}\left(q_0(\mathbf{z}_0 \mid \mathbf{x}) \,\|\, p_\theta^{\text{MDM}}(\mathbf{z}_0)\right)
-  \]
-</p>
-
-<p style="font-size: 85%;">
-  \[
-  = -\mathbb{E}_{\mathbf{z}_0 \sim q_0(\cdot \mid \mathbf{x})} \left[ 
-    \sum_{\ell \in \mathcal{M}(\mathbf{z}_0)} 
-    \log p_\theta^{\text{AR}}\left(\mathbf{x}^\ell \mid \mathbf{z}_0, \mathbf{x}^{<\ell}\right)
-  \right] + D_{\text{KL}}\left(q_0(\mathbf{z}_0 \mid \mathbf{x}) \,\|\, p_\theta^{\text{MDM}}(\mathbf{z}_0)\right).
-  \]
-</p>
-
-<p>
-  Given a denoising model \( \mathbf{x}_\theta : \mathcal{V}^L \to (\Delta^K)^L \) that parameterizes \(p_\theta^{\text{AR}}\) and \( p_\theta^{\text{MDM}} \), we show that the Negative Evidence Lower Bound (NELBO) factors into a sum of AR and MDM losses over masked positions:
-</p>
-
-<p style="font-size: 85%;">
-  \[
-  \mathcal{L}_{\text{NELBO}}(\mathbf{x}) =
-  \mathbb{E}_{\mathbf{z}_0 \sim q_0} 
-    \underbrace{\left[ - \sum_{\ell \in \mathcal{M}(\mathbf{z}_0)} 
-    \log \left\langle \mathbf{x}_\theta^\ell(\mathbf{z}_0 \odot \mathbf{x}^{<\ell}), \mathbf{x}^\ell \right\rangle \right]}_{\text{AR loss}}
-  
-  + \int_{t=0}^{t=1} \frac{\alpha_t'}{1 - \alpha_t} 
-  \underbrace{
-    \mathbb{E}_{\mathbf{z}_t \sim q_t} \left[
-      \sum_{\ell \in \mathcal{M}(\mathbf{z}_t)} 
-      \log \left\langle \mathbf{x}_\theta^\ell(\mathbf{z}_t), \mathbf{x}^\ell \right\rangle
-    \right]
-  }_{\text{MDM loss}} dt
-  \]
-</p>
-    
-    <h4>Attention masks for training</h4>
-    
-    <p>
-    <b>Diffusion Phase.</b> The denoising transformer receives \( \mathbf{z}_t \sim q_t(.|\mathbf{x})\), which contains the mask tokens to denoise, and \( \mathbf{x} \) as target. A random ordering \( \sigma \sim \mathcal{P}_L \) is sampled with the natural constraint that clean tokens in \(\mathbf{z}_t\) precede mask tokens in \(\mathbf{z}_t\) in \(\sigma\). Below is the example attention mask and its sorted version for implementation when \( \mathbf{x} = (A, B, C, D, E, F) \), \( \mathbf{z}_t = (A, M, C, M, M, F) \), and \( \sigma = (3, 1, 6, 4, 5, 2) \):
-    </p>
-    
-    <div style="text-align: center;">
-    <img src="static/images/esolmb_diffmask.svg" alt="MY ALT TEXT" style="width: 60%; height: auto;"/>
-    </div>
-    
-    <p>
-    <b>Sequential Phase. </b>
-    The denoising transformer receives \( \mathbf{z}_0 \oplus \mathbf{x} \in \mathcal{V}^{2L} \), where \( \mathbf{z}_0 \sim q_0(.|\mathbf{x})\) contains the mask tokens to denoise, and computes loss by comparing the transformer output over \( \mathbf{z}_0 \) against target \( \mathbf{x} \). Concatenating \( \mathbf{z}_0 \) and \( \mathbf{x} \) at input is required during training because we do not use shift-by-one at the output like AR models. A random ordering \( \sigma \sim \mathcal{P}_L \) is sampled with the constraints that (i) clean tokens in \(\mathbf{z}_0\) precede mask tokens in \(\mathbf{z}_0\) in \(\sigma\) and (2) mask tokens are in natural order in \( \sigma \). Below is the example attention mask and its sorted version for implementation when \( \mathbf{x} = (A, B, C, D, E, F) \), \( \mathbf{z}_0 = (A, M, C, M, M, F) \), and \( \sigma = (3, 1, 6, 2, 4, 5) \):
-	</p>
-    
-    <div style="text-align: center;">
-    <img src="static/images/esolmb_seqmask.svg" alt="MY ALT TEXT" style="width: 60%; height: auto;"/>
-    </div>
-    
-    <h4>Sampling</h4>
-    
-    <p>Efficient generation of an example sequence:</p>
-
-	<img src="static/images/graphical_abstract_esolmb.svg" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
-
-</section>
-
-<section class="section" id="Experiments">
-  <div class="container is-max-desktop">
-  <div class="content is-medium">
-    <h2 class="title">Experiments</h2>
-    <h4> Likelihood evaluation</h4>
-    <p> [Will be completed by April 19, 2025]
-    </p>
-    <h4>Generation speed</h4>
-    <p> [Will be completed by April 19, 2025]</p>
-    <h4>Generation quality</h4>
-    <p> [Will be completed by April 19, 2025]</p>
-    </div>
-  </div>
-</section>
-
-<!-- End Diffusion Models -->
-
-
-<!-- Paper poster -->
-<!-- <section class="hero is-small is-light">
-  <div class="hero-body">
-    <div class="container">
-      <h2 class="title">Poster</h2>
-
-      <iframe  src="static/pdfs/MDLM-NeurIPS.pdf" width="100%" height="940">
-          </iframe>
-        
-      </div>
-    </div>
-  </section> -->
-<!--End paper poster -->
-
-
-<!-- BibTex citation -->
-<!-- <section class="section" id="BibTeX">
-  <div class="container is-max-desktop content">
-    <h2 class="title">BibTeX</h2>
-
-    <div style="position: relative;">
-      <button onclick="copyBibTeX()" style="position: absolute; top: 10px; right: 10px; z-index: 1;">
-        Copy
-      </button>
-      <pre><code id="bibtex-code">@inproceedings{sahoo2025diffusion,
-  title={Esoteric Language Models},
-  author={Sahoo, Subham Sekhar and Deschenaux, Justin and Gokaslan, Aaron and Wang, Guanghan and Chiu, Justin T and Kuleshov, Volodymyr},
-  booktitle={ICLR 2025 Workshop on Deep Generative Model in Machine Learning: Theory, Principle and Efficacy}
-}</code></pre>
-    </div>
-  </div>
-</section> -->
-
-<!-- <script>
-  function copyBibTeX() {
-    const code = document.getElementById('bibtex-code').innerText;
-    navigator.clipboard.writeText(code).then(() => {
-      alert("BibTeX copied to clipboard!");
-    });
-  }
-</script> -->
-<!--End BibTex citation -->
-
-
-  <footer class="footer">
-  <div class="container">
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <div class="content">
-
-          <p>
-            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
-            You are free to borrow the of this website, we just ask that you link back to this page in the footer. <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
-            Commons Attribution-ShareAlike 4.0 International License</a>.
-          </p>
-
-        </div>
-      </div>
-    </div>
-  </div>
-</footer>
-
-<!-- Statcounter tracking code -->
-  
-<!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
-
-    <!-- End of Statcounter Code -->
-
-  </body>
+         </div>
+      </section>
+      <!-- Teaser video-->
+      <section class="hero teaser">
+         <div class="container is-max-desktop">
+            <div class="hero-body">
+               <div style="text-align: center; margin-bottom:1cm" >
+                  <img src="static/images/Graphical abstract (EsoLM-B + speed).svg" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
+               </div>
+               <h4 class="subtitle has-text-centered">
+                  <u>Left:</u> Efficient generation of an example sequence with our flagship model Eso-LM (B). 
+                  During the <span style="color: rgb(255, 142, 0); font-weight: bold;">Diffusion</span> Phase, 
+                  Eso-LMs denoise one or more, potentially non-neighboring mask tokens 
+                  (<span style="color: rgb(183, 183, 183); font-weight: bold;">M</span>) per step, just like masked diffusion models. 
+                  During the <span style="color: rgb(72, 117, 44); font-weight: bold;">Sequential</span> Phase, 
+                  Eso-LMs denoise the remaining mask tokens one at a time from left to right, just like autoregressive models but conditioned on left and right contexts. 
+                  Eso-LM (B) allows for 
+                  <strong>KV caching in both phases</strong> using 
+                  <strong>a single unified KV cache</strong>: 
+                  <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> bounding boxes enclose 
+                  transformer cells building their KV cache; 
+                  a cell becomes <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> once its KV cache is built. 
+                  The sequences below the transformers depict tokens in their natural order.
+               </h4>
+               <h4 class="subtitle has-text-centered">
+                  <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LM (B) achieves up to <b>40× faster inference</b>  than MDLM and <b>5× faster inference</b> than BD3-LMs.
+               </h4>
+               <!-- <img src="static/images/output.gif" width="100%" alt="A descriptive text for the GIF" > -->
+               <!-- <h4 class="subtitle has-text-centered">
+                  The sample generation process begins with a sequence of all masked tokens. MDLM then replaces these masked tokens with actual tokens in a random order.
+                  </h4> -->
+               <!-- <iframe width="100%" height="500"
+                  src="https://www.youtube.com/embed/WjAUX23vgfg">
+                  </iframe>
+                  <h4 class="subtitle has-text-centered">
+                    A <em>Simple and Effective</em> tutorial on our paper by <a href="https://www.youtube.com/@srush_nlp">Sasha Rush</a>.
+                  </h4> -->
+            </div>
+         </div>
+      </section>
+      <!-- End teaser video -->
+      <!-- Paper abstract -->
+      <section class="section hero is-light">
+         <div class="container is-max-desktop">
+            <div class="columns is-centered">
+               <div class="column is-four-fifths">
+                  <h2 class="title is-3">Key Contributions:</h2>
+                  <ol>
+                     <li> 
+                        We propose a new framework for language modeling: one that fuses AR and 
+                        MDM paradigms and outperforms the previous hybrid approach, BD3-LMs.
+                     </li>
+                     <li>
+                        Ours is the <strong>first approach to enable KV caching for MDMs</strong> while preserving parallel generation, achieving up to 
+                        <strong>40× faster inference</strong> than standard MDMs and <strong>4–5× faster inference</strong> than KV-cached semi-autoregressive baselines.
+                     </li>
+                     <li>
+                        We show that BD3-LMs degrade at low sampling steps, while our method remains competitive with MDMs in the low NFE regime and with AR in the high NFE regime.
+                     </li>
+                     <li>
+                        Our results establish a new state-of-the-art perplexity for discrete diffusion, narrowing the gap to autoregressive models.
+                     </li>
+                  </ol>
+               </div>
+            </div>
+         </div>
+      </section>
+      <!-- End paper abstract -->
+      <!-- Diffusion Models -->
+      <section class="section" id="DiffusionModels">
+         <div class="container is-max-desktop">
+            <div class="content is-medium">
+               <h2 class="title">Introduction</h2>
+               <p>
+                  Masked diffusion models (MDMs) (e.g., <a href="https://arxiv.org/abs/2406.07524">MDLM</a>) are a compelling alternative to AR models. However, they suffer from two key limitations:
+               <ol>
+                  <li><b>Inference speed</b>: Despite supporting parallel generation, MDMs are significantly slower than AR models in practice, largely due to the lack of KV caching—a crucial optimization for real-time applications like chat systems.</li>
+                  <li><b>Generation quality</b>: MDMs still show a noticeable likelihood gap on more complex language modeling tasks.</li>
+               </ol>
+               </p>
+               <p>
+                  Recently proposed <a href="https://arxiv.org/abs/2503.09573">BD3-LMs</a> address the speed issue by introducing a semi-autoregressive generation strategy. These models perform diffusion over fixed-length blocks of text sequentially. Because previously denoised blocks can be cached, BD3-LMs partially support KV caching and are faster than standard MDMs. However, we identify two key shortcomings in BD3-LMs: 
+               <ol>
+                  <li><b>Mode collapse at low sampling steps</b>: When the number of denoising steps is reduced for faster inference, BD3-LMs exhibit severe degradation in sample quality—worse than both AR (at high NFEs) and MDMs (at low NFEs).</li>
+                  <li><b>Incomplete caching</b>: While KV caching is possible across blocks, intra-block diffusion still lacks KV support, limiting overall speed gains.</li>
+               </ol>
+               </p>
+               <p>
+                  To address these challenges, we propose a new language modeling paradigm that fuses autoregressive and masked diffusion approaches. Our model is trained with a hybrid loss—a combination of AR and MDM objectives—which allows it to interpolate smoothly between the two paradigms in terms of perplexity and sample quality. This requires two key innovations:
+               <ol>
+                  <li><b>A revised attention mechanism</b> in the denoising transformer to support both AR and MDM styles of generation.</li>
+                  <li><b>A new training and sampling procedure</b> that enables KV caching within the diffusion phase, a feature previously unavailable in MDMs.</li>
+               </ol>
+               Due to the unconventional nature of this hybrid design, we name our method <b>Eso</b>teric <b>L</b>anguage <b>M</b>odels (Eso-LMs).
+               </p>
+               <!-- <h4 class="subtitle">Gaussiasn Diffusion</h3>-->
+               <!-- <p>[Will be completed by April 19, 2025]-->
+               <!-- Diffusion models are trained to iteratively undo a forward corruption process  q  that corrupts the clean data  $\mathbf{x} \in \mathbb{R}^{n}$  by adding Gaussian noise. In the reverse generation process, the trained model iteratively denoises the Gaussian noise to generate clean inputs that correspond to the input data distribution. -->
+               <!-- Discrete Diffusion -->
+               <!--<h4 class="subtitle">Discrete Diffusion</h3>-->
+               <!-- <p>[Will be completed by April 19, 2025]-->
+               <!-- Applications of diffusion modeling to discrete data can be categorized into two broad areas. The first involves embedding discrete structures in continuous space and then performing the Gaussian diffusion defined above on these continuous representations. More related to our method are works that define a diffusion process directly on discrete structures. <a href="https://arxiv.org/abs/2107.03006">D3PM </a> introduces a framework with a Markov forward process \( q(z_t|z_{t−1}) = \text{Cat}(z_t; Q_t z_{t−1}) \), defined by the multiplication of matrices \( Q_t \in \mathbb{R}^{n \times n} \) over \( T \) discrete time steps. The matrix \( Q_t \) is designed such that \( Q_T \cdot Q_{T-1} \cdots Q_1 \mathbf{x} \) converges to a stationary distribution. -->
+            </div>
+         </div>
+      </section>
+      <!-- End Diffusion Models -->
+      <!-- Simple Masked Diffusion Models -->
+      <section class="section" id="DiffusionDuality">
+         <div class="container is-max-desktop">
+         <div class="content is-medium">
+         <h2 class="title">Esoteric Language Models</h2>
+         <p>
+            In Eso-LMs, some tokens are generated in parallel via MDMs and the rest sequentially in a left-to-right fashion. Here we introduce the variant Eso-LM (B). Refer to our paper for the other variant Eso-LM (A).
+         </p>
+         <h4>Objective for training: ELBO</h4>
+         <p>
+            Let \( \mathcal{V} \) be the set of one-hot vectors corresponding to the tokens so that \( |\mathcal{V}| \) is the vocabulary size. Let \( L \) denote the sequence length.
+            Let \( \mathbf{x} \sim q_{\text{data}}(\mathbf{x}) \) in \( \mathcal{V}^L \) be a sample from the data distribution, 
+            and let \( p_\theta \) be our model distribution parameterized by \( \theta \). 
+            Eso-LMs decompose \( p_\theta \) into two components: an AR model \( p_\theta^{\text{AR}} \) and an MDM 
+            \( p_\theta^{\text{MDM}} \). The MDM generates a partially masked sequence \( \mathbf{z}_0 \in \mathcal{V}^L \sim p_\theta^{\text{MDM}}(\mathbf{z}_0) \), 
+            and the AR model finishes the remaining unmasking steps in an auto-regressive left-to-right manner: 
+            \( p_\theta^{\text{AR}}(\mathbf{x} \mid \mathbf{z}_0) \).
+         </p>
+         <p> The marginal likelihood of such a hybrid generative process is:
+         </p>
+         <p style="text-align: center;">
+            \( p_\theta(\mathbf{x}) = \sum_{\mathbf{z}_0 \in \mathcal{V}^L} p_\theta^{\text{AR}}(\mathbf{x} \mid \mathbf{z}_0) \, p_\theta^{\text{MDM}}(\mathbf{z}_0) \).
+         </p>
+         <p>
+            Although this sum is intractable, we can compute a variational bound on the true likelihood using a 
+            posterior \( q(\mathbf{z}_0 \mid \mathbf{x}) \). 
+            Since \( p_\theta^{\text{MDM}} \) models masked sequences, we choose \( q \) to be a simple masking distribution. 
+            Specifically, our choice \( q \) independently masks 
+            each token \( (\mathbf{x}^\ell)_{\ell \in [L]} \) with probability \( 1 - \alpha_0 \), where \( \alpha_0 \in [0, 1] \). 
+            This leads to the following variational bound:
+         </p>
+         <p style="font-size: 85%;">
+            \[
+            -\log p_\theta(\mathbf{x}) \leq -\mathbb{E}_{\mathbf{z}_0 \sim q_0(\cdot \mid \mathbf{x})} 
+            \left[ \log p_\theta^{\text{AR}}(\mathbf{x} \mid \mathbf{z}_0) \right] 
+            + D_{\text{KL}}\left(q_0(\mathbf{z}_0 \mid \mathbf{x}) \,\|\, p_\theta^{\text{MDM}}(\mathbf{z}_0)\right)
+            \]
+         </p>
+         <p style="font-size: 85%;">
+            \[
+            = -\mathbb{E}_{\mathbf{z}_0 \sim q_0(\cdot \mid \mathbf{x})} \left[ 
+            \sum_{\ell \in \mathcal{M}(\mathbf{z}_0)} 
+            \log p_\theta^{\text{AR}}\left(\mathbf{x}^\ell \mid \mathbf{z}_0, \mathbf{x}^{<\ell}\right)
+            \right] + D_{\text{KL}}\left(q_0(\mathbf{z}_0 \mid \mathbf{x}) \,\|\, p_\theta^{\text{MDM}}(\mathbf{z}_0)\right).
+            \]
+         </p>
+         <p>
+            Given a denoising model \( \mathbf{x}_\theta : \mathcal{V}^L \to (\Delta^K)^L \) that parameterizes \(p_\theta^{\text{AR}}\) and \( p_\theta^{\text{MDM}} \), we show that the Negative Evidence Lower Bound (NELBO) factors into a sum of AR and MDM losses over masked positions:
+         </p>
+         <p style="font-size: 85%;">
+            \[
+            \mathcal{L}_{\text{NELBO}}(\mathbf{x}) =
+            \mathbb{E}_{\mathbf{z}_0 \sim q_0} 
+            \underbrace{\left[ - \sum_{\ell \in \mathcal{M}(\mathbf{z}_0)} 
+            \log \left\langle \mathbf{x}_\theta^\ell(\mathbf{z}_0 \odot \mathbf{x}^{<\ell}), \mathbf{x}^\ell \right\rangle \right]}_{\text{AR loss}}
+            + \int_{t=0}^{t=1} \frac{\alpha_t'}{1 - \alpha_t} 
+            \underbrace{
+            \mathbb{E}_{\mathbf{z}_t \sim q_t} \left[
+            \sum_{\ell \in \mathcal{M}(\mathbf{z}_t)} 
+            \log \left\langle \mathbf{x}_\theta^\ell(\mathbf{z}_t), \mathbf{x}^\ell \right\rangle
+            \right]
+            }_{\text{MDM loss}} dt
+            \]
+         </p>
+         <h4>Attention masks for training</h4>
+         <p>
+            <b>Diffusion Phase.</b> The denoising transformer receives \( \mathbf{z}_t \sim q_t(.|\mathbf{x})\), which contains the mask tokens to denoise, and \( \mathbf{x} \) as target. A random ordering \( \sigma \sim \mathcal{P}_L \) is sampled with the natural constraint that clean tokens in \(\mathbf{z}_t\) precede mask tokens in \(\mathbf{z}_t\) in \(\sigma\). Below is the example attention mask and its sorted version for implementation when \( \mathbf{x} = (A, B, C, D, E, F) \), \( \mathbf{z}_t = (A, M, C, M, M, F) \), and \( \sigma = (3, 1, 6, 4, 5, 2) \):
+         </p>
+         <div style="text-align: center;">
+            <img src="static/images/esolmb_diffmask.svg" alt="MY ALT TEXT" style="width: 60%; height: auto;"/>
+         </div>
+         <p>
+            <b>Sequential Phase. </b>
+            The denoising transformer receives \( \mathbf{z}_0 \oplus \mathbf{x} \in \mathcal{V}^{2L} \), where \( \mathbf{z}_0 \sim q_0(.|\mathbf{x})\) contains the mask tokens to denoise, and computes loss by comparing the transformer output over \( \mathbf{z}_0 \) against target \( \mathbf{x} \). Concatenating \( \mathbf{z}_0 \) and \( \mathbf{x} \) at input is required during training because we do not use shift-by-one at the output like AR models. A random ordering \( \sigma \sim \mathcal{P}_L \) is sampled with the constraints that (i) clean tokens in \(\mathbf{z}_0\) precede mask tokens in \(\mathbf{z}_0\) in \(\sigma\) and (2) mask tokens are in natural order in \( \sigma \). Below is the example attention mask and its sorted version for implementation when \( \mathbf{x} = (A, B, C, D, E, F) \), \( \mathbf{z}_0 = (A, M, C, M, M, F) \), and \( \sigma = (3, 1, 6, 2, 4, 5) \):
+         </p>
+         <div style="text-align: center;">
+            <img src="static/images/esolmb_seqmask.svg" alt="MY ALT TEXT" style="width: 60%; height: auto;"/>
+         </div>
+         <h4>Sampling</h4>
+         <p>Efficient generation of an example sequence:</p>
+         <img src="static/images/graphical_abstract_esolmb.svg" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
+      </section>
+      <section class="section" id="Experiments">
+         <div class="container is-max-desktop">
+            <div class="content is-medium">
+               <h2 class="title">Experiments</h2>
+               <h4> Likelihood evaluation</h4>
+               <p> [Will be completed by April 19, 2025]
+               </p>
+               <h4>Generation speed</h4>
+               <p> [Will be completed by April 19, 2025]</p>
+               <h4>Generation quality</h4>
+               <p> [Will be completed by April 19, 2025]</p>
+            </div>
+         </div>
+      </section>
+      <!-- End Diffusion Models -->
+      <!-- Paper poster -->
+      <!-- <section class="hero is-small is-light">
+         <div class="hero-body">
+           <div class="container">
+             <h2 class="title">Poster</h2>
+         
+             <iframe  src="static/pdfs/MDLM-NeurIPS.pdf" width="100%" height="940">
+                 </iframe>
+               
+             </div>
+           </div>
+         </section> -->
+      <!--End paper poster -->
+      <!-- BibTex citation -->
+      <!-- <section class="section" id="BibTeX">
+         <div class="container is-max-desktop content">
+           <h2 class="title">BibTeX</h2>
+         
+           <div style="position: relative;">
+             <button onclick="copyBibTeX()" style="position: absolute; top: 10px; right: 10px; z-index: 1;">
+               Copy
+             </button>
+             <pre><code id="bibtex-code">@inproceedings{sahoo2025diffusion,
+         title={Esoteric Language Models},
+         author={Sahoo, Subham Sekhar and Deschenaux, Justin and Gokaslan, Aaron and Wang, Guanghan and Chiu, Justin T and Kuleshov, Volodymyr},
+         booktitle={ICLR 2025 Workshop on Deep Generative Model in Machine Learning: Theory, Principle and Efficacy}
+         }</code></pre>
+           </div>
+         </div>
+         </section> -->
+      <!-- <script>
+         function copyBibTeX() {
+           const code = document.getElementById('bibtex-code').innerText;
+           navigator.clipboard.writeText(code).then(() => {
+             alert("BibTeX copied to clipboard!");
+           });
+         }
+         </script> -->
+      <!--End BibTex citation -->
+      <footer class="footer">
+         <div class="container">
+            <div class="columns is-centered">
+               <div class="column is-8">
+                  <div class="content">
+                     <p>
+                        This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+                        You are free to borrow the of this website, we just ask that you link back to this page in the footer. <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+                        Commons Attribution-ShareAlike 4.0 International License</a>.
+                     </p>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </footer>
+      <!-- Statcounter tracking code -->
+      <!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+      <!-- End of Statcounter Code -->
+   </body>
 </html>
