@@ -56,7 +56,7 @@
                         <span class="author-block">
                         <a href="https://akhauriyash.github.io/" target="_blank">Yash Akhauri<sup>†1</sup></a>,</span>
                         <span class="author-block">
-                        <a>Johnna Liu<sup>†1</sup></a>,</span>
+                        <a href="https://johnnajliu.github.io/">Johnna Liu<sup>†1</sup></a>,</span>
                         <span class="author-block">
                         <a href="https://deepansha.com/" target="_blank">Deepansha Singh<sup>†1</sup></a>,</span>
                         <span class="author-block">
@@ -76,8 +76,8 @@
                            <sup>2</sup>Cornell University &nbsp;&nbsp;&nbsp;
                            <sup>3</sup>MBZUAI &nbsp;&nbsp;&nbsp;
                            <sup>4</sup>NVIDIA
-                           <br> <b >Pre-print 2025</b>
-                           <br> <sup>*</sup>Joint first authors &nbsp;&nbsp;&nbsp; <sup>†</sup>Joint second authors
+                           <br><sup>*</sup>Joint first authors &nbsp;&nbsp;&nbsp; <sup>†</sup>Joint second authors
+                           <br><b>Pre-print 2025</b>
                            <!-- <br> <b >[The blog-post will be ready by April 19, 2025.]</b> -->
                         </span>
                      </div>
@@ -115,7 +115,7 @@
                            </span>
                            <!-- Google Colab Link -->
                            <span class="link-block">
-                           <a href="https://colab.research.google.com/drive/1Mh9IwVw-o8zYnYlPT1zL0BTM7I2MUseF?usp=sharing" target="_blank"
+                           <a href="https://colab.research.google.com/drive/12dWwEsPWaKq2vaTJoRy7ZEClTLGRFmeE?usp=sharing" target="_blank"
                               class="external-link button is-normal is-rounded is-dark">
                            <span class="icon">
                            <img src="https://colab.research.google.com/img/colab_favicon.ico" alt="Colab Logo" style="width: 18px; height: 18px;">
@@ -125,7 +125,7 @@
                            </span>
                            <!-- HuggingFace link -->
                            <span class="link-block">
-                              <a href="https://huggingface.co/collections/s-sahoo/duo-67f9ff8fde919224e5fbd875" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                              <a href="https://huggingface.co/collections/sahoo-diffusion/eso-lms-6838e86cb2c49f45302f0092" target="_blank" class="external-link button is-normal is-rounded is-dark">
                                  <span class="icon">
                                     <p>&#129303;</p>
                                  </span>
@@ -169,18 +169,8 @@
                   The sequences below the transformers depict tokens in their natural order.
                </h4>
                <h4 class="subtitle has-text-centered">
-                  <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LM (B) achieves up to <b>40× faster inference</b>  than MDLM and <b>5× faster inference</b> than BD3-LMs.
+                  <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LM (B) achieves up to <b>65× faster inference</b>  than MDLM and <b>3-4× faster inference</b> than BD3-LMs.
                </h4>
-               <!-- <img src="static/images/output.gif" width="100%" alt="A descriptive text for the GIF" > -->
-               <!-- <h4 class="subtitle has-text-centered">
-                  The sample generation process begins with a sequence of all masked tokens. MDLM then replaces these masked tokens with actual tokens in a random order.
-                  </h4> -->
-               <!-- <iframe width="100%" height="500"
-                  src="https://www.youtube.com/embed/WjAUX23vgfg">
-                  </iframe>
-                  <h4 class="subtitle has-text-centered">
-                    A <em>Simple and Effective</em> tutorial on our paper by <a href="https://www.youtube.com/@srush_nlp">Sasha Rush</a>.
-                  </h4> -->
             </div>
          </div>
       </section>
@@ -198,7 +188,7 @@
                      </li>
                      <li>
                         Ours is the <strong>first approach to enable KV caching for MDMs</strong> while preserving parallel generation, achieving up to 
-                        <strong>40× faster inference</strong> than standard MDMs and <strong>4–5× faster inference</strong> than KV-cached semi-autoregressive baselines.
+                        <strong>65× faster inference</strong> than standard MDMs and <strong>3-4× faster inference</strong> than KV-cached semi-autoregressive baselines.
                      </li>
                      <li>
                         We show that BD3-LMs degrade at low sampling steps, while our method remains competitive with MDMs in the low NFE regime and with AR in the high NFE regime.
@@ -337,12 +327,22 @@
             <div class="content is-medium">
                <h2 class="title">Experiments</h2>
                <h4> Likelihood evaluation</h4>
-               <p> [Will be completed by April 19, 2025]
-               </p>
+                  <p>We train and evaluate on the One Billion Words (LM1B) dataset and OpenWebText (OWT).</p>
+                  <div style="text-align: center;">
+                     <img src="static/images/likelihood.png" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
+                  </div>
                <h4>Generation speed</h4>
-               <p> [Will be completed by April 19, 2025]</p>
+                  <div style="text-align: center;">
+                     <img src="static/images/generation_speed.png" alt="MY ALT TEXT" style="width: 50%; height: auto;"/>
+                  </div>
+                  <p>*NFEs: number of function/network evaluations</p>
                <h4>Generation quality</h4>
-               <p> [Will be completed by April 19, 2025]</p>
+                  <p>We use Genenerative Perplexity (Gen. PPL) to evaluate the quality of samples generated by models trained on OWT. For both training and sampling, sequence length is 1024.</p>
+                  <p>To compare sampling efficiency, we also record the median sampling duration in seconds (across 5 trials) taken by each method to generate a single sample (i.e., batch size is 1).</p>
+                  <div style="text-align: center;">
+                     <img src="static/images/generation_quality.png" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
+                  </div>
+                  <p>*NFEs: number of function/network evaluations</p>
             </div>
          </div>
       </section>
