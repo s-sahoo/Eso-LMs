@@ -13,7 +13,7 @@
 **Pre-print 2025**
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/334dcb10-b8f7-4e17-9536-0770a2b34915" alt="Eso-LM (B)" style="width:100%;">
+  <img src="https://github.com/user-attachments/assets/51506974-12f5-4379-ab2e-62fc0c5bc408" alt="Eso-LM (B)" style="width:100%;">
 </p>
 
 We propose **Eso**teric **L**anguage **M**odels (Eso-LMs), a new framework for language modeling that fuses AR and MDM paradigms and outperforms the previous hybrid approach, BD3-LMs. Our model uses a revised attention mechanism to support both paradigms, and is trained with a hybrid loss—a combination of AR and MDM objectives—which allows it to interpolate smoothly between the two paradigms in terms of perplexity and sample quality. Further, ours is the first approach to enable KV caching for MDMs while preserving parallel generation, achieving up to **65× faster inference** than standard MDMs and **4× faster inference** than KV-cached semi-autoregressive baselines. 
