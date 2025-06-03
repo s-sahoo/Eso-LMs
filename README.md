@@ -104,5 +104,14 @@ Adjust `batch_size` (must fit on your GPU) and `num_batches` to generate the des
 This repository was built off of [DUO](https://github.com/s-sahoo/duo).
 
 ## Citation
-
-TODO
+```
+@misc{sahoo2025esotericlanguagemodels,
+      title={Esoteric Language Models}, 
+      author={Subham Sekhar Sahoo and Zhihan Yang and Yash Akhauri and Johnna Liu and Deepansha Singh and Zhoujun Cheng and Zhengzhong Liu and Eric Xing and John Thickstun and Arash Vahdat},
+      year={2025},
+      eprint={2506.01928},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2506.01928}, 
+}
+```
