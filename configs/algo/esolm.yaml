@@ -1,0 +1,14 @@
+name: esolm
+backbone: esolm_dit  # dit / dimamba / hf_dit
+parameterization: subs
+time_conditioning: False
+T: 0  # 0 (continuous time) / 1000 
+subs_masking: False
+causal_attention: False
+alpha_0: 0.0
+batch_split: 0.0
+diffusion_shuffle: False 
+diffusion_attn_mode: bidirectional
+sequential_shuffle: False
+sequential_attn_mode: causal
+loss_type: elbo
