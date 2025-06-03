@@ -2,7 +2,7 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/12dWwEsPWaKq2vaTJoRy7ZEClTLGRFmeE?usp=sharing)
 [![deploy](https://img.shields.io/badge/Blog%20%20-8A2BE2)](https://s-sahoo.com/Eso-LMs/)
-[![arXiv](https://img.shields.io/badge/arXiv-2406.07524-red.svg)](https://arxiv.org/abs/2406.07524)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.01928-red.svg)](https://arxiv.org/abs/2506.01928)
 [![deploy](https://img.shields.io/badge/HuggingFace%20-Eso--LMs%20-blue)](https://huggingface.co/collections/sahoo-diffusion/eso-lms-6838e86cb2c49f45302f0092)
 
 <a href="https://s-sahoo.com/"><b>Subham Sekhar Sahoo</b></a><sup>\*</sup><sup>1</sup>, <a href="https://zhihanyang2022.github.io"><b>Zhihan Yang</b></a><sup>\*</sup><sup>2</sup>, <a href="https://akhauriyash.github.io/">Yash Akhauri</a><sup>†1</sup>, <a href="https://johnnajliu.github.io/">Johnna Liu</a><sup>†1</sup>, <a href="http://www.deepansha.com/">Deepansha Singh</a><sup>†1</sup>, <a href="https://blankcheng.github.io/">Zhoujun Cheng</a><sup>†3</sup>, <a href="https://hunterhector.github.io/">Zhengzhong Liu</a><sup>3</sup>, <a href="https://www.cs.cmu.edu/~epxing/">Eric Xing</a><sup>3</sup>, <a href="https://johnthickstun.com/">John Thickstun</a><sup>2</sup>, <a href="http://latentspace.cc/">Arash Vahdat</a><sup>4</sup>  
