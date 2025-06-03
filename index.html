@@ -361,7 +361,7 @@
          </section> -->
       <!--End paper poster -->
       <!-- BibTex citation -->
-      <!-- <section class="section" id="BibTeX">
+      <section class="section" id="BibTeX">
          <div class="container is-max-desktop content">
            <h2 class="title">BibTeX</h2>
          
@@ -369,22 +369,26 @@
              <button onclick="copyBibTeX()" style="position: absolute; top: 10px; right: 10px; z-index: 1;">
                Copy
              </button>
-             <pre><code id="bibtex-code">@inproceedings{sahoo2025diffusion,
-         title={Esoteric Language Models},
-         author={Sahoo, Subham Sekhar and Deschenaux, Justin and Gokaslan, Aaron and Wang, Guanghan and Chiu, Justin T and Kuleshov, Volodymyr},
-         booktitle={ICLR 2025 Workshop on Deep Generative Model in Machine Learning: Theory, Principle and Efficacy}
-         }</code></pre>
+             <pre><code id="bibtex-code">@misc{sahoo2025esotericlanguagemodels,
+      title={Esoteric Language Models}, 
+      author={Subham Sekhar Sahoo and Zhihan Yang and Yash Akhauri and Johnna Liu and Deepansha Singh and Zhoujun Cheng and Zhengzhong Liu and Eric Xing and John Thickstun and Arash Vahdat},
+      year={2025},
+      eprint={2506.01928},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2506.01928}, 
+}</code></pre>
            </div>
          </div>
-         </section> -->
-      <!-- <script>
+         </section>
+      <script>
          function copyBibTeX() {
            const code = document.getElementById('bibtex-code').innerText;
            navigator.clipboard.writeText(code).then(() => {
              alert("BibTeX copied to clipboard!");
            });
          }
-         </script> -->
+         </script>
       <!--End BibTex citation -->
       <footer class="footer">
          <div class="container">
