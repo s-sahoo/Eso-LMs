@@ -1,4 +1,5 @@
 .DS_Store
+scripts_local/
 
 .hf_cache
 test/
