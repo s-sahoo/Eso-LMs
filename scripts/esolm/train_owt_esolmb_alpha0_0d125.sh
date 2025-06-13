@@ -15,11 +15,11 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-esolmb-alpha0-1-bf16-${SLURM_JOB_ID}
+RUN_NAME=owt-esolmb-alpha0-0d125-bf16-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
-  loader.batch_size=32 \
+  loader.batch_size=64 \
   loader.eval_batch_size=64 \
   model=small \
   data=openwebtext-split \
@@ -27,11 +27,13 @@ srun python -u -m main \
   +data.insert_valid_special=False \
   wandb.name=${RUN_NAME} \
   algo=esolm \
-  algo.alpha_0=1.0 \
-  algo.batch_split=1.0 \
+  algo.alpha_0=0.125 \
+  algo.batch_split=0.5 \
   algo.diffusion_shuffle=True \
   algo.diffusion_attn_mode=causal \
-  algo.loss_type=low_var \
+  algo.sequential_shuffle=True \
+  algo.sequential_attn_mode=causal \
+  algo.loss_type=elbo \
   model.length=1024 \
   eval.generate_samples=False \
   eval.compute_generative_perplexity=False \

@@ -15,11 +15,11 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-esolma-alpha0-1-${SLURM_JOB_ID}
+RUN_NAME=owt-esolma-alpha0-1-bf16-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
-  loader.batch_size=32 \
+  loader.batch_size=64 \
   loader.eval_batch_size=64 \
   model=small \
   data=openwebtext-split \

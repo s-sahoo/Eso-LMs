@@ -153,8 +153,8 @@ def _get_seq_mask_prefix_lm(seq_len, cutoffs):
     B=None, H=None, Q_LEN=seq_len*2, KV_LEN=seq_len*2)
 
 
-flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='reduce-overhead')
-# flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='max-autotune-no-cudagraphs')
+# flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='reduce-overhead')
+flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='max-autotune-no-cudagraphs')
 # flex_attention_compiled = flex_attention
 # flex_attention_compiled = torch.compile(flex_attention, dynamic=True)
 
@@ -944,7 +944,7 @@ class EsoLMDiT(DiT):
       features = self._sequential_features(zt, x0)
     x = features['x']
     t_cond = F.silu(self.sigma_map(sigma))
-    with torch.amp.autocast('cuda', enabled=False):
+    with torch.amp.autocast('cuda', dtype=torch.bfloat16):
       for i in range(len(self.blocks)):
         x = self.blocks[i](x, features['rotary'], c=t_cond, 
                            attn_mask=features['attention'])
