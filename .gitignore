@@ -1,5 +1,6 @@
 .DS_Store
 scripts_local/
+slurm/
 
 .hf_cache
 test/
