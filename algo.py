@@ -90,7 +90,8 @@ class MDLM(trainer_base.AbsorbingState):
     
     # Normalize the model_output such that x.exp() is
     # a probability distribution over vocab_size.
-    model_output = F.log_softmax(model_output, dim=-1)
+    model_output = model_output - torch.logsumexp(
+      model_output, dim=-1, keepdim=True)
     # Apply updates directly in the logits matrix.
     # For the logits of the unmasked tokens, set all values
     # to -infinity except for the indices corresponding to
