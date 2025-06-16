@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J train_owt_esolm
+#SBATCH -J eval_owt_esolm
 #SBATCH --partition=main
 #SBATCH --output=slurm/%j_%x.out
 #SBATCH --error=slurm/%j_%x.err
