@@ -24,7 +24,7 @@ In this repository, we release both variants of Eso-LMs: Eso-LM (A) and Eso-LM (
 ## Code Organization
 1. ```main.py```: Routines for training, evaluation, and generating samples
 2. ```trainer_base.py```: Base classes for AR and all kinds of discrete diffusion in ```algo.py```
-3. ```algo.py```: Classes for AR, MDLM, EsoLM, D3PMAbsorb, SEDDAbsorb and DUO
+3. ```algo.py```: Classes for AR, MDLM, EsoLM
 4. ```dataloader.py```: Dataloaders
 5. ```utils.py```: LR scheduler, logging, `fsspec` handling, etc.
 6. ```models/```: Denoising network architectures. Supports [DiT](https://arxiv.org/abs/2212.09748), EsoLM-DiT, and AR transformer

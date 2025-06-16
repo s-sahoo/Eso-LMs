@@ -451,7 +451,7 @@ class Diffusion(TrainerBase):
                           dim=-1,
                           index=x0[:, :, None]).squeeze(-1)
 
-  def nll_per_token(self, model_output, xt, x0, alpha_t,
+  def nll_per_token(self, model_output, x0, loss_mask, alpha_t,
                     dalpha_t, low_var):
     raise NotImplementedError
 
@@ -471,14 +471,13 @@ class Diffusion(TrainerBase):
     alpha_t = alpha_t.unsqueeze(-1)
     assert alpha_t.ndim == 2
     sigma = self._sigma_from_alphat(alpha_t)
-
-    xt = self.q_xt(x0, alpha_t)
+    xt, loss_mask = self.q_xt(x0, alpha_t)
     log_x_theta = self.forward(xt, sigma=sigma)
     utils.print_nans(log_x_theta, 'model_output')
     return self.nll_per_token(
       log_x_theta=log_x_theta,
-      xt=xt,
       x0=x0,
+      loss_mask=loss_mask,
       alpha_t=alpha_t,
       dalpha_t=dalpha_t,
       low_var=train_mode and self.loss_type == 'low_var')
@@ -638,7 +637,7 @@ class AbsorbingState(Diffusion):
     move_indices = torch.rand(
       * x.shape, device=x.device) < 1 - alpha_t
     xt = torch.where(move_indices, self.mask_index, x)
-    return xt
+    return xt, move_indices
 
   def prior_sample(self, *batch_dims):
     return self.mask_index * torch.ones(
@@ -703,33 +702,3 @@ class AbsorbingState(Diffusion):
                         1 - torch.exp(-sigma).squeeze(-1),
                         0)[..., None]
     return edge
-
-
-class UniformState(Diffusion):
-  def _validate_configuration(self):
-    super()._validate_configuration()
-    assert self.time_conditioning
-    assert self.parameterization == 'mean'
-    if self.config.algo.name != 'distillation':
-      assert self.T == 0
-
-  def q_xt(self, x, alpha_t):
-    """Computes the noisy sample xt.
-
-    Args:
-      x: int torch.Tensor with shape (batch_size,
-          diffusion_model_input_length), input.
-      move_chance: float torch.Tensor with shape
-        (batch_size, 1).
-    """
-    move_indices = torch.rand(
-      *x.shape, device=x.device) < 1 - alpha_t
-    uniform_tensor = torch.randint(
-      0, self.vocab_size, x.shape, device=x.device)
-    xt = torch.where(move_indices, uniform_tensor, x)
-    return xt
-
-  def prior_sample(self, *batch_dims):
-    return torch.randint(
-      0, self.vocab_size, batch_dims, dtype=torch.int64,
-      device=self.device)

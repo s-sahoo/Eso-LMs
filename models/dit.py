@@ -944,7 +944,7 @@ class EsoLMDiT(DiT):
       features = self._sequential_features(zt, x0)
     x = features['x']
     t_cond = F.silu(self.sigma_map(sigma))
-    with torch.amp.autocast('cuda', enabled=False):
+    with torch.amp.autocast('cuda', dtype=torch.bfloat16):
       for i in range(len(self.blocks)):
         x = self.blocks[i](x, features['rotary'], c=t_cond, 
                            attn_mask=features['attention'])
@@ -1007,7 +1007,7 @@ class EsoLMDiT(DiT):
       num_clean = None
       num_clean_and_mask = None
 
-    with torch.amp.autocast('cuda', enabled=False):
+    with torch.amp.autocast('cuda', dtype=torch.bfloat16):
       for i in range(len(self.blocks)):
         x = self.blocks[i](
           x, rotary, c=t_cond, 

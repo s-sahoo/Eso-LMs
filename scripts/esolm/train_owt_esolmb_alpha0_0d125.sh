@@ -15,7 +15,7 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-esolma-alpha0-0d125-${SLURM_JOB_ID}
+RUN_NAME=owt-esolmb-alpha0-0d125-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
@@ -30,9 +30,9 @@ srun python -u -m main \
   algo.alpha_0=0.125 \
   algo.batch_split=0.5 \
   algo.diffusion_shuffle=True \
-  algo.diffusion_attn_mode=mixed2 \
-  algo.sequential_shuffle=False \
-  algo.sequential_attn_mode=mixed \
+  algo.diffusion_attn_mode=causal \
+  algo.sequential_shuffle=True \
+  algo.sequential_attn_mode=causal \
   algo.loss_type=elbo \
   model.length=1024 \
   eval.generate_samples=False \
