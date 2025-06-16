@@ -248,10 +248,10 @@ class TrainerBase(L.LightningModule):
   def _process_model_output(self, model_output, xt, sigma):
     raise NotImplementedError
 
-  def forward(self, xt, sigma, x0=None):
+  def forward(self, xt, sigma, sort_idx=None, x0=None):
     sigma = self._process_sigma(sigma)
     with torch.amp.autocast('cuda', dtype=torch.float32):
-      model_output = self.backbone(xt, sigma, x0)
+      model_output = self.backbone(xt, sigma, sort_idx, x0)
     return self._process_model_output(
       model_output=model_output, xt=xt, sigma=sigma)
 
@@ -451,7 +451,7 @@ class Diffusion(TrainerBase):
                           dim=-1,
                           index=x0[:, :, None]).squeeze(-1)
 
-  def nll_per_token(self, model_output, x0, loss_mask, alpha_t,
+  def nll_per_token(self, model_output, xt, x0, alpha_t,
                     dalpha_t, low_var):
     raise NotImplementedError
 
@@ -471,13 +471,13 @@ class Diffusion(TrainerBase):
     alpha_t = alpha_t.unsqueeze(-1)
     assert alpha_t.ndim == 2
     sigma = self._sigma_from_alphat(alpha_t)
-    xt, loss_mask = self.q_xt(x0, alpha_t)
+    xt = self.q_xt(x0, alpha_t)
     log_x_theta = self.forward(xt, sigma=sigma)
     utils.print_nans(log_x_theta, 'model_output')
     return self.nll_per_token(
       log_x_theta=log_x_theta,
+      xt=xt,
       x0=x0,
-      loss_mask=loss_mask,
       alpha_t=alpha_t,
       dalpha_t=dalpha_t,
       low_var=train_mode and self.loss_type == 'low_var')
@@ -637,7 +637,7 @@ class AbsorbingState(Diffusion):
     move_indices = torch.rand(
       * x.shape, device=x.device) < 1 - alpha_t
     xt = torch.where(move_indices, self.mask_index, x)
-    return xt, move_indices
+    return xt
 
   def prior_sample(self, *batch_dims):
     return self.mask_index * torch.ones(

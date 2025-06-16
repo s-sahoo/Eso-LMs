@@ -93,12 +93,13 @@ class MDLM(trainer_base.AbsorbingState):
     model_output = model_output.log_softmax(-1)
     return model_output
 
-  def nll_per_token(self, log_x_theta, x0, loss_mask, alpha_t,
+  def nll_per_token(self, log_x_theta, xt, x0, alpha_t,
                     dalpha_t, low_var=False):
-    return log_x_theta.gather(
+    log_p_theta = log_x_theta.gather(
       dim=-1,
       index=x0[:, :, None])[:, :, 0]
     # carry-over unmasking
+    loss_mask = xt == self.mask_index
     log_p_theta = log_p_theta * loss_mask
     if low_var:
       return -log_p_theta
@@ -111,6 +112,23 @@ class EsoLM(MDLM):
     super().__init__(config, tokenizer)
     self.alpha_0 = config.algo.alpha_0
     self.noise = trainer_base.LogLinear(self.alpha_0)
+
+  def _sort_indices(
+    self, indices, shuffle, keep_masks_unshuffled=False):
+    masked = (indices == self.mask_index)
+    if shuffle:
+      offsets = torch.rand(
+        indices.shape).to(indices.device) * 0.9
+      if keep_masks_unshuffled:
+        # induce left-to-right order within masked tokens
+        # only for sequential part
+        offsets[masked] = torch.linspace(
+          0, 1, torch.sum(masked)).to(indices.device)
+    else:
+      offsets = torch.linspace(
+        0, 0.9, indices.shape[1]).to(indices.device)
+    sort_idx = (masked + offsets).argsort(descending=False)
+    return sort_idx
 
   def _loss(self, x0, valid_tokens, 
             current_accumulation_step=None, train_mode=False):
@@ -133,9 +151,12 @@ class EsoLM(MDLM):
       assert num_recons > 0
       alpha_start = self.config.algo.alpha_0
       z0 = self.q_xt(x0_reconstruction, alpha_start)
+      reconstruction_loss, sort_idx = (
+        self._reconstruction_loss(x0_reconstruction, z0))
+      valid_tokens_reconstruction = torch.gather(
+        valid_tokens_reconstruction, dim=1, index=sort_idx)
       reconstruction_loss = (
-        self._reconstruction_loss(x0_reconstruction, z0)
-        * valid_tokens_reconstruction).sum()
+        reconstruction_loss * valid_tokens_reconstruction).sum()
       # artificially scale the reconstruction loss so that the
       # NLL is computed correctly.
       recons_loss_per_token = reconstruction_loss / num_recons
@@ -144,10 +165,12 @@ class EsoLM(MDLM):
 
     if do_diffusion:
       assert num_diffusion > 0
+      diffusion_loss, sort_idx = self.nll(
+        x0_diffusion, None, current_accumulation_step, train_mode)
+      valid_tokens_diffusion = torch.gather(
+        valid_tokens_diffusion, dim=1, index=sort_idx)
       diffusion_loss = (
-        self.nll(x0_diffusion, None, 
-                 current_accumulation_step, train_mode)
-        * valid_tokens_diffusion).sum()
+        diffusion_loss * valid_tokens_diffusion).sum()
       diffusion_loss_per_token = diffusion_loss / num_diffusion
     else:
       diffusion_loss_per_token = torch.tensor([0.0]).to(x0.device)
@@ -167,17 +190,63 @@ class EsoLM(MDLM):
         nlls=loss_per_token * num_tokens,
         reconstruction_loss=recons_loss_per_token * num_tokens,
         num_tokens=num_tokens)
- 
+
   def _reconstruction_loss(self, x0, z0):
     dummy_t0 = torch.zeros(1, z0.shape[0], dtype=self.dtype,
                            device=self.device)
+    # sort inputs and targets before passing to the model
+    sort_idx = self._sort_indices(
+      z0, shuffle=self.config.algo.sequential_shuffle,
+      keep_masks_unshuffled=True)
+    z0 = torch.gather(z0, dim=1, index=sort_idx)
+    x0 = torch.gather(x0, dim=1, index=sort_idx)
+    # pass sort_idx into the model to also sort pos. embeddings   
+    # _process_model_output performs zero-masking trick 
     model_output_t0 = self.forward(
-      z0, dummy_t0, x0=x0)
+      z0, dummy_t0, sort_idx, x0=x0)
     reconstruction_loss = - torch.gather(
       input=model_output_t0,
       dim=-1,
       index=x0[:, :, None]).squeeze(-1)
-    return reconstruction_loss
+    # carry-over loss masking
+    loss_mask = z0 == self.mask_index
+    reconstruction_loss = reconstruction_loss * loss_mask
+    return reconstruction_loss, sort_idx
+
+  def nll(self, x0, output_tokens,
+          current_accumulation_step=None, train_mode=False):
+    del output_tokens
+    t = self._sample_t(x0.shape[0],
+                       current_accumulation_step)
+    assert t.shape[0] == x0.shape[0]
+    if self.T > 0:
+      t = (t * self.T).to(torch.int)
+      t = t / self.T
+      # t \in {1/T, 2/T, ..., 1}
+      t += (1 / self.T)
+    
+    dalpha_t, alpha_t = self.noise(t)
+    alpha_t = alpha_t.unsqueeze(-1)
+    assert alpha_t.ndim == 2
+    sigma = self._sigma_from_alphat(alpha_t)
+
+    xt = self.q_xt(x0, alpha_t)
+    # sort inputs and targets before passing to the model
+    sort_idx = self._sort_indices(
+      xt, shuffle=self.config.algo.diffusion_shuffle)
+    xt = torch.gather(xt, dim=1, index=sort_idx)
+    x0 = torch.gather(x0, dim=1, index=sort_idx)
+    # pass sort_idx into the model to also sort pos. embeddings
+    # _process_model_output performs zero-masking trick
+    log_x_theta = self.forward(xt, sigma=sigma, sort_idx=sort_idx)
+    # nll_per_token performs carry-over loss masking
+    return self.nll_per_token(
+      log_x_theta=log_x_theta,
+      xt=xt,
+      x0=x0,
+      alpha_t=alpha_t,
+      dalpha_t=dalpha_t,
+      low_var=train_mode and self.loss_type == 'low_var'), sort_idx
   
   def _sample_t(self, n, accum_step):
     if accum_step is not None:

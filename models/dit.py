@@ -770,7 +770,7 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
     for block in self.blocks:
       block.reset_kv_cache()
 
-  def forward(self, x, sigma, x0=None, kv_cache=False):
+  def forward(self, x, sigma, sort_idx=None, x0=None, kv_cache=False):
     assert x0 is None
     x = self.vocab_embed(x)
     if self.causal:
@@ -789,18 +789,6 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
     return x
 
 
-def _get_reverse_indices(indices):
-  """
-  indices: LongTensor of shape [B, N] representing permutations
-  returns: LongTensor of shape [B, N] representing the inverse permutations
-  """
-  B, N = indices.shape
-  reverse_indices = torch.empty_like(indices)
-  arange = torch.arange(N, device=indices.device).unsqueeze(0).expand(B, -1)
-  reverse_indices.scatter_(1, indices, arange)
-  return reverse_indices
-
-
 class EsoLMDiT(DiT):
   def __init__(self, config, vocab_size: int, mask_index: int):
     super().__init__(config, vocab_size)
@@ -811,31 +799,11 @@ class EsoLMDiT(DiT):
     assert not self.causal and self.adaLN
     self.mask_index = mask_index
 
-    self.diffusion_shuffle = config.algo.diffusion_shuffle
     self.diffusion_attn_mode = config.algo.diffusion_attn_mode
-    self.sequential_shuffle = config.algo.sequential_shuffle
     self.sequential_attn_mode = config.algo.sequential_attn_mode
 
     self.mdlm_mask = None
     self.seq_mask = None
-
-  def _sort_indices(
-    self, indices, shuffle, keep_masks_unshuffled=False):
-    masked = (indices == self.mask_index)
-    if shuffle:
-      offsets = torch.rand(
-        indices.shape).to(indices.device) * 0.9
-      if keep_masks_unshuffled:
-        # induce left-to-right order within masked tokens
-        # only for sequential part
-        offsets[masked] = torch.linspace(
-          0, 1, torch.sum(masked)).to(indices.device)
-    else:
-      offsets = torch.linspace(
-        0, 0.9, indices.shape[1]).to(indices.device)
-    sort_idx = (masked + offsets).argsort(descending=False)
-    indices = torch.gather(indices, dim=1, index=sort_idx)
-    return indices, sort_idx
   
   def _sort_rotary_cos_sin(self, rotary_cos_sin, sort_idx):
     # example cos shape: (1, 128, 3, 1, 32)
@@ -875,18 +843,12 @@ class EsoLMDiT(DiT):
       return _get_mixed2_mask(seq_len=seq_len,
                               cutoffs=cutoffs)
 
-  def _diffusion_features(self, zt, sort_idx=None,
+  def _diffusion_features(self, zt, sort_idx,
                           attn_mode=None, cutoffs=None):
-    # masked diffusion:
-    #  - move masked tokens to the left
-    #  - move unmasked tokens to the right
     if cutoffs is None:
       cutoffs = torch.sum(zt != self.mask_index, dim=1)
     if attn_mode is None:
       attn_mode = self.diffusion_attn_mode
-    if sort_idx is None:
-      zt, sort_idx = self._sort_indices(
-        zt, self.diffusion_shuffle)
     x = self.vocab_embed(zt)
     rotary_cos_sin = self.rotary_emb(x)
     rotary_cos_sin = self._sort_rotary_cos_sin(
@@ -900,17 +862,9 @@ class EsoLMDiT(DiT):
             'attention': attention_mask,
             'sorted_indices': sort_idx}
 
-  def _sequential_features(self, zt, x0):
-    # gap-filling AR with trick from BD3LM 
-    #  - also move masked tokens to the left
-    #  - also move unmasked tokens to the right
+  def _sequential_features(self, zt, x0, sort_idx):
     seq_len = zt.shape[1]
-    zt, sort_idx = self._sort_indices(
-      zt, self.sequential_shuffle, 
-      keep_masks_unshuffled=True)
-    x0 = torch.gather(x0, dim=1, index=sort_idx)
     zt_and_x0 = torch.cat([zt, x0], dim=1)
-    cutoffs = torch.sum(zt != self.mask_index, dim=1)
     x = self.vocab_embed(zt_and_x0)
     rotary_cos_sin = self.rotary_emb(x[:, :seq_len])
     rotary_cos_sin = self._sort_rotary_cos_sin(
@@ -928,20 +882,21 @@ class EsoLMDiT(DiT):
               'attention': self.seq_mask,
               'sorted_indices': sort_idx}
     elif self.sequential_attn_mode == 'mixed':
+      cutoffs = torch.sum(zt != self.mask_index, dim=1)
       return {'x': x,
               'rotary': rotary_cos_sin,
               'attention': _get_seq_mask_prefix_lm(
                 seq_len, cutoffs=cutoffs),
               'sorted_indices': sort_idx}
 
-  def forward(self, zt, sigma, x0=None):
+  def forward(self, zt, sigma, sort_index, x0=None):
     diffusion_mode = x0 is None
     seq_len = zt.shape[1]
 
     if diffusion_mode:
-      features = self._diffusion_features(zt)
+      features = self._diffusion_features(zt, sort_index)
     else:
-      features = self._sequential_features(zt, x0)
+      features = self._sequential_features(zt, x0, sort_index)
     x = features['x']
     t_cond = F.silu(self.sigma_map(sigma))
     with torch.amp.autocast('cuda', dtype=torch.bfloat16):
@@ -952,11 +907,6 @@ class EsoLMDiT(DiT):
 
     if not diffusion_mode:
       x = x[:, :seq_len]
-    sort_idx_reversed = _get_reverse_indices(features['sorted_indices'])
-    x = torch.gather(
-      x, dim=1, 
-      index=sort_idx_reversed[:, :, None].expand(
-        -1, -1, self.vocab_size))
     return x
 
   @torch.no_grad()
