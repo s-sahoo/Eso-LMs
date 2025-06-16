@@ -1,17 +1,15 @@
 #!/bin/bash
-#SBATCH -J eval_esolm                  # Job name
-#SBATCH -o watch_folder/%x_%j.out     # log file (out & err)
-#SBATCH -N 1                          # Total number of nodes requested
-#SBATCH --get-user-env                # retrieve the users login environment
-#SBATCH --mem=100000                  # server memory requested (per node)
-#SBATCH -t 960:00:00                  # Time limit (hh:mm:ss)
-#SBATCH --partition=thickstun               # Request partition
-#SBATCH --constraint="[a5000|a6000|a100|3090]"
-#SBATCH --constraint="gpu-high"
+#SBATCH -J train_owt_esolm
+#SBATCH --partition=main
+#SBATCH --output=slurm/%j_%x.out
+#SBATCH --error=slurm/%j_%x.err
+#SBATCH -N 1
 #SBATCH --ntasks-per-node=4
-#SBATCH --gres=gpu:4                  # Type/number of GPUs needed
-#SBATCH --open-mode=append            # Do not overwrite logs
-#SBATCH --requeue                     # Requeue upon preemption
+#SBATCH --gres=gpu:4
+#SBATCH --open-mode=append
+
+# To enable preemption re-loading, set `hydra.run.dir` or 
+# `checkpointing.save_dir` explicitly.
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -32,6 +30,8 @@ nvcc --version
 
 export HYDRA_FULL_ERROR=1
 
+DATA_DIR=${HOME}/data/esolm
+
 srun python -u -m main \
   mode=ppl_eval \
   loader.eval_batch_size=32 \
@@ -48,4 +48,5 @@ srun python -u -m main \
   algo.sequential_shuffle=True \
   eval.checkpoint_path=$ckpt_path \
   sampling.num_sample_batches=0 \
+  data.cache_dir=${DATA_DIR} \
   +wandb.offline=true

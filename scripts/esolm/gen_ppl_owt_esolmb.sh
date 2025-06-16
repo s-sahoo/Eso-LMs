@@ -1,16 +1,15 @@
 #!/bin/bash
-#SBATCH -J sample_esolm                # Job name
-#SBATCH -o watch_folder/%x_%j.out     # log file (out & err)
-#SBATCH -N 1                          # Total number of nodes requested
-#SBATCH --get-user-env                # retrieve the users login environment
-#SBATCH --mem=64000                   # server memory requested (per node)
-#SBATCH -t 960:00:00                  # Time limit (hh:mm:ss)
-#SBATCH --partition=kuleshov          # Request partition
-#SBATCH --constraint="[a5000|a6000|a100|3090]"
+#SBATCH -J sample_owt_esolm
+#SBATCH --partition=main
+#SBATCH --output=slurm/%j_%x.out
+#SBATCH --error=slurm/%j_%x.err
+#SBATCH -N 1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:1                  # Type/number of GPUs needed
-#SBATCH --open-mode=append            # Do not overwrite logs
-#SBATCH --requeue                     # Requeue upon preemption
+#SBATCH --gres=gpu:1
+#SBATCH --open-mode=append
+
+# To enable preemption re-loading, set `hydra.run.dir` or 
+# `checkpointing.save_dir` explicitly.
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in

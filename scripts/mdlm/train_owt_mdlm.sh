@@ -15,7 +15,7 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-ar-${SLURM_JOB_ID}
+RUN_NAME=owt-mdlm-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \

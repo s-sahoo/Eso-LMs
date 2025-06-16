@@ -1,8 +1,6 @@
---extra-index-url https://download.pytorch.org/whl/nightly/cu126
+--extra-index-url https://download.pytorch.org/whl/cu126
 
-torch==2.7.0.dev20250308+cu126
-torchvision==0.22.0.dev20250308+cu126
-torchaudio==2.6.0.dev20250308+cu126
+torch==2.7.0+cu126
 torchmetrics==1.6.2
 datasets==3.3.2
 einops==0.8.1
@@ -19,5 +17,5 @@ rich==13.7.1
 scikit-learn==1.5.1
 timm==0.9.16
 transformers==4.49.0
-triton==3.2.0
+triton==3.3.0
 wandb==0.19.8

@@ -19,7 +19,7 @@ RUN_NAME=owt-esolma-alpha0-0d5-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
-  loader.batch_size=32 \
+  loader.batch_size=64 \
   loader.eval_batch_size=64 \
   model=small \
   data=openwebtext-split \
