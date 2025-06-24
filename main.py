@@ -113,7 +113,8 @@ def _generate_samples(diffusion_model, config, logger,
       # any text after the first EOS token.
     else:
       samples = model.restore_model_and_sample(
-        num_steps=config.sampling.steps)
+        num_steps=config.sampling.steps, 
+        sample_eval=True)  # delete ema after first use to save memory
       model.metrics.record_entropy(samples)
       text_samples = model.tokenizer.batch_decode(samples)
       model.metrics.record_generative_perplexity(

@@ -24,6 +24,8 @@ torch._C._jit_set_profiling_executor(False)
 torch._C._jit_override_can_fuse_on_cpu(True)
 torch._C._jit_override_can_fuse_on_gpu(True)
 
+import time
+
 
 @lru_cache
 def _causal_mask(b, h, q_idx, kv_idx):
@@ -418,9 +420,10 @@ class LabelEmbedder(nn.Module):
 #################################################################################
 
 class DDiTBlockCausal(nn.Module):
-  def __init__(self, dim, n_heads, mlp_ratio=4, dropout=0.1):
+  def __init__(self, dim, n_heads, num_tokens, mlp_ratio=4, dropout=0.1):
     super().__init__()
     self.n_heads = n_heads
+    self.num_tokens = num_tokens
 
     self.dim = dim
     self.norm1 = LayerNorm(dim)
@@ -436,9 +439,6 @@ class DDiTBlockCausal(nn.Module):
     self.dropout2 = nn.Dropout(dropout)
     self.dropout = dropout
 
-    self.past_k = None
-    self.past_v = None
-
   def _get_bias_dropout_scale(self):
     if self.training:
       return bias_dropout_add_scale_fused_train
@@ -446,31 +446,49 @@ class DDiTBlockCausal(nn.Module):
       return bias_dropout_add_scale_fused_inference
 
   def reset_kv_cache(self):
-    self.past_k = None
-    self.past_v = None
+    self.k_cache = None
+    self.v_cache = None
+    self.pointer = -1
 
   def _process_and_update_kv(self, k, v):
-    if (self.past_k is not None
-        and self.past_v is not None):
-      k = torch.cat([self.past_k, k], dim=1)
-      v = torch.cat([self.past_v, v], dim=1)
-    self.past_k = k
-    self.past_v = v
-    return k, v
+    if (self.k_cache is None
+        and self.v_cache is None):
+      self.k_cache = torch.empty(
+        k.shape[0], self.num_tokens, self.n_heads, 
+        self.dim // self.n_heads,
+        device=k.device, dtype=k.dtype
+      )
+      self.v_cache = torch.empty_like(self.k_cache)
+    self.pointer += 1
+    self.k_cache[:, self.pointer:self.pointer+1] = k
+    self.v_cache[:, self.pointer:self.pointer+1] = v
+    past_k = self.k_cache[:, :self.pointer+1]
+    past_v = self.v_cache[:, :self.pointer+1]
+    return past_k, past_v
 
   @torch.no_grad()
   def _attention_with_kv_cache(self, qkv, rotary_cos_sin):
+    # qkv: qkv values of the current position
+    # qkv shape: [b 1 3 h d]
+    # rotary_cos_sin: rotary embed of the current position
+    # rotary_cos_sin shape: [1 1 3 1 d]
     assert qkv.shape[1] == 1
+    # q or k or v shape: [b 1 1 h d]
     q, k, v = qkv.chunk(3, dim=2)
-    k, v = self._process_and_update_kv(k=k, v=v)
+    # q or k or v shape: [b 1 h d]
+    q = q.squeeze(dim=2)
+    k = k.squeeze(dim=2)
+    v = v.squeeze(dim=2)
+    # apply rotary emb before kv caching
     with torch.amp.autocast('cuda', enabled=False):
       cos, sin = _split_rotary(rotary_cos_sin, q.dtype)
-      q = apply_rotary_emb_torch(
-        q.squeeze(dim=2), cos[-1:, :], sin[-1:, :])
-      k = apply_rotary_emb_torch(k.squeeze(dim=2), cos, sin)
-      v = v.squeeze(dim=2)
+      q = apply_rotary_emb_torch(q, cos, sin)
+      k = apply_rotary_emb_torch(k, cos, sin)
+    k, v = self._process_and_update_kv(k=k, v=v)
     scale = q.shape[-1] ** 0.5
     # swap seq_len and num_heads
+    # q shape:   [b h 1 d]
+    # k/v shape: [b h s' d]
     q = q.transpose(1, 2)
     k = k.transpose(1, 2)
     v = v.transpose(1, 2)
@@ -491,7 +509,7 @@ class DDiTBlockCausal(nn.Module):
       h=self.n_heads)
     
     if kv_cache:
-      x = self._attention_with_kv_cache(qkv.detach())
+      x = self._attention_with_kv_cache(qkv.detach(), rotary_cos_sin)
     else:
       q, k, v = split_and_apply_rotary_pos_emb(qkv, rotary_cos_sin)
       # recreate the mask every time (cheap) to fit different input length
@@ -510,13 +528,14 @@ class DDiTBlockCausal(nn.Module):
 
 
 class DDiTBlock(nn.Module):
-  def __init__(self, dim, n_heads, adaLN,
+  def __init__(self, dim, n_heads, adaLN, num_tokens,
                cond_dim=None, mlp_ratio=4,
                dropout=0.1):
     super().__init__()
     self.n_heads = n_heads
     self.dim = dim
     self.adaLN = adaLN
+    self.num_tokens = num_tokens
 
     self.norm1 = LayerNorm(dim)
     self.attn_qkv = nn.Linear(dim, 3 * dim, bias=False)
@@ -536,8 +555,6 @@ class DDiTBlock(nn.Module):
       self.adaLN_modulation.weight.data.zero_()
       self.adaLN_modulation.bias.data.zero_()
 
-    self.past_k = None
-    self.past_v = None
     self.neg_infinity = -1000000.0
 
   def _get_bias_dropout_scale(self):
@@ -547,59 +564,69 @@ class DDiTBlock(nn.Module):
       return bias_dropout_add_scale_fused_inference
 
   def reset_kv_cache(self):
-    self.past_k = None
-    self.past_v = None
+    self.k_cache = None
+    self.v_cache = None
+    self.num_clean_cached = 0
 
   def _process_and_update_kv(self, k, v, num_clean):
     if num_clean == 0:
-      # no caching if all we see if mask tokens
+      # no caching if all we see is mask tokens
       return k, v
     else:
-      if (self.past_k is None 
-          and self.past_v is None):
-        self.past_k = k[:, :num_clean, :, :]
-        self.past_v = v[:, :num_clean, :, :]
+      if (self.k_cache is None 
+          and self.v_cache is None):
+        self.k_cache = torch.empty(
+          k.shape[0], self.num_tokens, self.n_heads, 
+          self.dim // self.n_heads,
+          device=k.device, dtype=k.dtype
+        )
+        self.v_cache = torch.empty_like(self.k_cache)
+        num_new = k.shape[1]
+        self.k_cache[:, :num_new] = k
+        self.v_cache[:, :num_new] = v
+        self.num_clean_cached += num_clean
         return k, v
       else:
-        k_so_far = torch.cat([self.past_k, k], dim=1)
-        v_so_far = torch.cat([self.past_v, v], dim=1)
-        # only update the kv cache with kv values from
-        # clean tokens generated during the previous 
-        # iteration
-        self.past_k = torch.cat(
-          [self.past_k, k[:, :num_clean, :, :]], dim=1)
-        self.past_v = torch.cat(
-          [self.past_v, v[:, :num_clean, :, :]], dim=1)
+        num_new = k.shape[1]
+        num_clean_cached_and_new = self.num_clean_cached + num_new
+        self.k_cache[:, self.num_clean_cached:num_clean_cached_and_new] = k
+        self.v_cache[:, self.num_clean_cached:num_clean_cached_and_new] = v
+        self.num_clean_cached += num_clean
+        k_so_far = self.k_cache[:, :num_clean_cached_and_new]
+        v_so_far = self.v_cache[:, :num_clean_cached_and_new]
         return k_so_far, v_so_far
 
   @torch.no_grad()
   def _attention_with_kv_cache(self, qkv, rotary_cos_sin, 
                                num_clean, num_clean_and_mask):
+    # qkv shape: 
+    # [bs, num gen last + num to gen, 3, h, d]
+    # rotary_cos_sin shape:
+    # [1, num gen last + num to gen, 1, h, d]
     # num_clean: num gen last
     # num_clean_and_mask: num gen last + num to gen
     assert qkv.shape[1] == num_clean_and_mask
-    # qkv shape: 
-    # [bs, num gen last + num to gen, 3, h, d]
+    # q or k or v shape: [b s' 1 h d]
     q, k, v = qkv.chunk(3, dim=2)
+    # q or k or v shape: [b s' h d]
     q = q.squeeze(dim=2)
     k = k.squeeze(dim=2)
     v = v.squeeze(dim=2)
-    k, v = self._process_and_update_kv(
-      k=k, v=v, num_clean=num_clean)
-    # new kv shape: 
-    # [bs, 
-    #  num gen before last + num gen last + num to gen, 
-    #  h, d]
+    # apply rotary emb before kv caching
     with torch.amp.autocast('cuda', enabled=False):
       cos, sin = rotary_cos_sin
       cos = cos.to(qkv.dtype)
       sin = sin.to(qkv.dtype)
       cos = cos[:,:,0,0,:cos.shape[-1]//2]
       sin = sin[:,:,0,0,:sin.shape[-1]//2]
-      cos_part = cos[:, -num_clean_and_mask:]
-      sin_part = sin[:, -num_clean_and_mask:]
-      q = apply_rotary_emb_torch(q, cos_part, sin_part)
+      q = apply_rotary_emb_torch(q, cos, sin)
       k = apply_rotary_emb_torch(k, cos, sin)
+    k, v = self._process_and_update_kv(
+      k=k, v=v, num_clean=num_clean)
+    # new kv shape: 
+    # [bs, 
+    #  num gen before last + num gen last + num to gen, 
+    #  h, d]
     scale = q.shape[-1] ** 0.5
     # shapes after transpose:
     # q: [bs, h, num gen last + num to gen, d]
@@ -742,6 +769,7 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
         block = DDiTBlockCausal(
           dim=dim,
           n_heads=config.model.n_heads,
+          num_tokens=config.model.length,
           dropout=config.model.dropout)
       else:
         block = DDiTBlock(
@@ -749,6 +777,7 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
           n_heads=config.model.n_heads,
           cond_dim=cond_dim,
           adaLN=self.adaLN,
+          num_tokens=config.model.length,
           dropout=config.model.dropout)
       blocks.append(block)
     self.blocks = nn.ModuleList(blocks)
@@ -772,15 +801,26 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
 
   def forward(self, x, sigma, sort_idx=None, x0=None, kv_cache=False):
     assert x0 is None
+    if kv_cache:
+      seq_len_so_far = x.shape[1]
+      x = x[:, -1:]
     x = self.vocab_embed(x)
     if self.causal:
       t_cond = None
     else:
       t_cond = F.silu(self.sigma_map(sigma))
 
-    rotary_cos_sin = self.rotary_emb(x)
     if kv_cache:
-      x = x[:, -1:, :]
+      # create dummy constant-length input to avoid recomputing cos and sin
+      dummy_x = torch.zeros(1, self.config.model.length).to(x.device)
+      rotary_cos_sin = self.rotary_emb(dummy_x)
+      cos, sin = rotary_cos_sin
+      cos = cos[:, seq_len_so_far:seq_len_so_far+1]
+      sin = sin[:, seq_len_so_far:seq_len_so_far+1]
+      rotary_cos_sin = (cos, sin)
+    else:
+      rotary_cos_sin = self.rotary_emb(x)
+
     with torch.amp.autocast('cuda', dtype=torch.bfloat16):
       for i in range(len(self.blocks)):
         x = self.blocks[i](
@@ -909,64 +949,44 @@ class EsoLMDiT(DiT):
       x = x[:, :seq_len]
     return x
 
+  def reset_sorted_rotary_cache(self):
+    self.rotary_cos_sin_sorted = None
+
   @torch.no_grad()
-  def forward_sample(self, zt, sort_idx, attn_mode=None,
-                     cutoffs=None, kv_cache=False,
+  def forward_sample(self, zt, sort_idx,
                      last_k_start=None,
                      curr_k_start=None,
                      curr_k_end=None):
-    """
-    zt is expected to be sorted as per sort_idx.
-    
-    When kv_cache is true:
-    - zt will have shape (num_samples, model.length); we need its shape 
-      to generate all the rotary embeddings because any of them can be
-      selected by the random ordering
-    - sort_idx will have shape  (num_samples, model.length) for the same reason
+    # expect zt to be sorted already
+    x = self.vocab_embed(zt[:, last_k_start:curr_k_end])
 
-    Within self._diffusion_features, zt will be used
-    to generate the full rotary embeddings, and sort_idx
-    will be used to index the embedded zt into shape
-    (num_samples, num_tokens_generated_last_time (non-mask) + num_tokens_to_gen (mask), hidden)
-    """
-    assert attn_mode is not None
-    ones = torch.ones(zt.shape[0], device=zt.device)
-    if cutoffs is not None:
-      cutoffs = cutoffs * ones
-      assert cutoffs.ndim == 1
-    features = self._diffusion_features(
-      zt=zt,
-      sort_idx=sort_idx,
-      attn_mode=attn_mode,
-      cutoffs=cutoffs)
+    if self.rotary_cos_sin_sorted is None:
+      # avoid repeatedly sorting across steps
+      rotary_cos_sin = self.rotary_emb(zt)
+      self.rotary_cos_sin_sorted = self._sort_rotary_cos_sin(
+        rotary_cos_sin, sort_idx)
+
+    cos, sin = self.rotary_cos_sin_sorted
+    rotary_cos_sin = (
+      cos[:, last_k_start:curr_k_end], 
+      sin[:, last_k_start:curr_k_end])
+
     zeros = torch.zeros(zt.shape[0], device=zt.device)
     t_cond = F.silu(self.sigma_map(zeros))
 
-    x = features['x']
-    rotary = features['rotary']
-    if kv_cache:
-      # expect x to be sorted
-      x = x[:, last_k_start:curr_k_end, :]
-      # rotary is already sorted here
-      # looking ahead
-      cos, sin = rotary
-      rotary = (cos[:, :curr_k_end], sin[:, :curr_k_end])
-      num_clean = curr_k_start - last_k_start
-      num_clean_and_mask = curr_k_end - last_k_start
-    else:
-      num_clean = None
-      num_clean_and_mask = None
+    num_clean = curr_k_start - last_k_start
+    num_clean_and_mask = curr_k_end - last_k_start
 
+    assert self.config.sampling.kv_cache
     with torch.amp.autocast('cuda', dtype=torch.bfloat16):
       for i in range(len(self.blocks)):
         x = self.blocks[i](
-          x, rotary, c=t_cond, 
-          attn_mask=features['attention'],
-          kv_cache=kv_cache, 
+          x, rotary_cos_sin, c=t_cond, 
+          attn_mask=None,
+          kv_cache=True, 
           num_clean=num_clean,
           num_clean_and_mask=num_clean_and_mask)
       x = self.output_layer(x, c=t_cond)
-    
-    if kv_cache:
-      x = x[:, num_clean:, :]
+  
+    x = x[:, num_clean:, :]
     return x

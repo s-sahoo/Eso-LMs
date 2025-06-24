@@ -56,22 +56,29 @@ class AR(trainer_base.TrainerBase):
       dtype=torch.long,
       device=self.device)
     x[:, 0] = self.tokenizer.bos_token_id
-    # precompute noise
-    noise = (torch.distributions.Gumbel(0, 1)
-             .sample((num_samples, num_pred_tokens, self.vocab_size))
-             .to(self.device))
-    if self.config.sampling.use_float64:
-      noise = noise.to(torch.float64)
     kv_cache = self.config.sampling.kv_cache
     self.backbone.reset_kv_cache()
+    torch.cuda.synchronize()
+    start = time.perf_counter()
     for i in range(num_pred_tokens):
+      print(f'Step {i+1} / {num_pred_tokens}')
       output = self.backbone(
         x[:, :i + 1], sigma=None, x0=None, kv_cache=kv_cache)
       output[:, :, self.mask_index] = self.neg_infinity
-      output = output.log_softmax(-1)
-      y = (output[:, -1, :] + noise[:, i, :]).argmax(-1)
+      if self.config.sampling.p_nucleus < 1:
+        output = output.to(torch.float64)
+        output = utils.top_k_top_p_filtering(
+          output, top_p=self.config.sampling.p_nucleus)
+      # generate noise on the fly to avoid memory issues
+      u = torch.rand((x.shape[0], self.vocab_size),
+                      dtype=torch.float64, device=self.device)
+      noise = -torch.log(-torch.log(u))
+      y = (output[:, -1, :] + noise).argmax(-1)
       x[:, i + 1] = y
+    torch.cuda.synchronize()
+    duration = time.perf_counter() - start
     self.backbone.reset_kv_cache()
+    print(f'Total duration: {duration} seconds')
     return x
 
   def _process_sigma(self, sigma):
@@ -105,6 +112,78 @@ class MDLM(trainer_base.AbsorbingState):
       return -log_p_theta
     else:
       return dalpha_t / (1 - alpha_t) * log_p_theta    
+
+  @torch.no_grad()
+  def _ddpm_caching_update(self, x, t, dt, p_x0=None):
+    _, stay_chance_t = self.noise(t)
+    _, stay_chance_s = self.noise(t - dt)
+    move_chance_t = 1 - stay_chance_t
+    move_chance_s = 1 - stay_chance_s
+    move_chance_t = move_chance_t[:, None]
+    move_chance_s = move_chance_s[:, None]
+    mask_prob = move_chance_s / move_chance_t
+
+    # if p_x0 is None:
+    assert not self.config.algo.time_conditioning
+    sigma_t = torch.zeros(x.shape[0], device=x.device)
+    print('network evaluation')
+    logits_unnorm = self.backbone(x, sigma_t)
+    #logits_unnorm[:, :, self.mask_index] = self.neg_infinity
+    # if self.config.sampling.p_nucleus < 1:
+    #   output = utils.top_k_top_p_filtering(
+    #     output, top_p=self.config.sampling.p_nucleus)
+    #p_x0 = logits_unnorm.softmax(dim=-1)
+
+    # q_xs = p_x0 * (1 - mask_prob)
+    # q_xs[:, :, self.mask_index] = mask_prob.squeeze(-1)
+    # logits_unnorm = torch.log(q_xs)
+    
+    # if self.gumbel_noise is None:
+    #   if self.config.sampling.use_float64:
+    #     sampling_dtype = torch.float64
+    #   u = torch.rand((x.shape[0], self.num_tokens, self.vocab_size), 
+    #                   dtype=sampling_dtype).to(self.device)
+    #   self.gumbel_noise = -torch.log(-torch.log(u))
+    #self.gumbel_noise
+
+    # x_sample = (logits_unnorm).argmax(-1)
+    # copy_flag = (x != self.mask_index).to(x.dtype)
+    # x_new = copy_flag * x + (1 - copy_flag) * x_sample
+
+    x_new = x
+
+    if not torch.allclose(x_new, x):
+      return None, x_new
+    else:
+      return None, x_new
+
+  @torch.no_grad()
+  def generate_samples(self, num_samples, num_steps=None, **kwargs):
+    if num_steps is None:
+      num_steps = self.config.sampling.steps
+    x_accum = self.prior_sample(num_samples, self.num_tokens)
+    ones = torch.ones((num_samples, 1), dtype=self.dtype,
+                      device=self.device)
+    dt = 1 / num_steps
+    p_x0_cache = None
+    timesteps = torch.linspace(1, 0, num_steps, 
+                               device=self.device)
+    self.gumbel_noise = None
+    start = time.perf_counter()
+    for i in range(num_steps):
+      print(f'step {i} / {num_steps}')
+      # if self.mask_index not in x_accum:
+      #   break
+      t = timesteps[i]
+      p_x0_cache, x_next = self._ddpm_caching_update(
+          x=x_accum,
+          t=t * ones,
+          dt=dt,
+          p_x0=p_x0_cache)
+      x_accum = x_next
+    end = time.perf_counter()
+    print(end - start)
+    return x_accum
 
 
 class EsoLM(MDLM):
@@ -311,63 +390,44 @@ class EsoLM(MDLM):
     unmask_k_tokens = unmask_k_tokens + [1] * (
       self.num_tokens - num_diffusion_tokens)
     assert sum(unmask_k_tokens) == self.num_tokens
-    noise = torch.distributions.Gumbel(0, 1).sample(
-      (num_samples, self.num_tokens,
-       self.vocab_size)).to(self.device)
     unmasked_tokens = 0
-    kv_cache = self.config.sampling.kv_cache
-    start = time.perf_counter()
     self.backbone.reset_kv_cache()
+    self.backbone.reset_sorted_rotary_cache()
+    profile_throughput = self.config.sampling.profile_throughput
+    if profile_throughput:
+      torch.cuda.synchronize()
+    start = time.perf_counter()
     for i, k in enumerate(unmask_k_tokens):
-      # attn_mode and cutoffs are important when kv caching is off
-      if unmasked_tokens >= num_diffusion_tokens:
-        # stop doing diffusion
-        attn_mode = self.config.algo.sequential_attn_mode
-        # prefix-lm masking is named differently for diffusion
-        # and sequential phase
-        if attn_mode == 'mixed':  # prefix-lm masking for sequential
-          attn_mode = 'mixed2'  # prefix-lm masking for diffusion
-        cutoffs = num_diffusion_tokens
-      else:
-        # keep doing diffusion
-        attn_mode = self.config.algo.diffusion_attn_mode
-        cutoffs = unmasked_tokens
       if i == 0:
         last_k_start = 0
       else:
         last_k_start = unmasked_tokens - unmask_k_tokens[i-1]
-      log_p_x0 = self.backbone.forward_sample(
+      logits = self.backbone.forward_sample(
         zt=x,  # shape[1] is model.length
         sort_idx=sort_idx,  # shape[1] is model.length
-        attn_mode=attn_mode,
-        cutoffs=cutoffs,
-        kv_cache=kv_cache,
         last_k_start=last_k_start,
         curr_k_start=unmasked_tokens,  # also last_k_end
         curr_k_end=unmasked_tokens+k)
-      if self.config.sampling.use_float64:
-        log_p_x0 = log_p_x0.to(torch.float64)
-      log_p_x0[:, :, self.mask_index] = self.neg_infinity
-      if self.config.sampling.p_nucleus < 1:
-        # top_k_top_p_filtering takes in logits (normalized or
-        # unnormalized) and returns logits (unnormalized)
-        log_p_x0 = utils.top_k_top_p_filtering(
-          log_p_x0, top_p=self.config.sampling.p_nucleus)
-      # log_p_x0 is unnormalized, but that's okay
-      # with the gumbel max trick because normalized and
-      # unnormalized logits differ by a constant, i.e., 
-      # the log normalizing constant, which doesn't
-      # affect the argmax operation
-      indices = slice(unmasked_tokens, unmasked_tokens + k)
-      if kv_cache:
-        y = (log_p_x0 + noise[:, indices, :]).argmax(-1)
-      else:
-        y = (log_p_x0[:, indices, :] + noise[:, indices, :]).argmax(-1)
-      x[:, indices] = y
+      if not profile_throughput:
+        logits[:, :, self.mask_index] = self.neg_infinity
+        if self.config.sampling.p_nucleus < 1:
+          logits = logits.to(torch.float64)
+          logits = utils.top_k_top_p_filtering(
+            logits, top_p=self.config.sampling.p_nucleus)
+        indices = slice(unmasked_tokens, unmasked_tokens + k)
+        # generate noise on the fly to avoid memory issues
+        u = torch.rand(num_samples, k, self.vocab_size, 
+                       device=self.device, dtype=torch.float64)
+        noise = -torch.log(-torch.log(u))
+        y = (logits + noise).argmax(-1)
+        x[:, indices] = y
       unmasked_tokens += k
+    if profile_throughput:
+      torch.cuda.synchronize()
     end = time.perf_counter()
     print(f'Sampling duration: {end - start} seconds')
     self.backbone.reset_kv_cache()
+    self.backbone.reset_sorted_rotary_cache()
     sort_idx_reversed = utils.get_reverse_indices(sort_idx)
     x = torch.gather(x, dim=1, index=sort_idx_reversed)
     return x

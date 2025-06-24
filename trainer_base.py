@@ -137,10 +137,12 @@ class TrainerBase(L.LightningModule):
     return itertools.chain(self.backbone.parameters(),
                            self.noise.parameters())
 
-  def _eval_mode(self):
+  def _eval_mode(self, sample_eval=False):
     if self.ema:
       self.ema.store(self._get_parameters())
       self.ema.copy_to(self._get_parameters())
+      if sample_eval:
+        self.ema = None  # free up memory
     self.backbone.eval()
     self.noise.eval()
 
@@ -359,15 +361,16 @@ class TrainerBase(L.LightningModule):
   def generate_samples(self, num_samples, num_steps, eps):
     raise NotImplementedError
 
-  def restore_model_and_sample(self, num_steps, eps=1e-5):
+  def restore_model_and_sample(self, num_steps, eps=1e-5, sample_eval=False):
     """Generate samples from the model."""
     # Lightning auto-casting is not working in this method for some reason
-    self._eval_mode()
+    self._eval_mode(sample_eval)
     samples = self.generate_samples(
       num_samples=self.config.loader.eval_batch_size,
       num_steps=num_steps,
       eps=eps)
-    self._train_mode()
+    if not sample_eval:
+      self._train_mode()
     return samples
 
   def _process_model_input(self, x0, valid_tokens):

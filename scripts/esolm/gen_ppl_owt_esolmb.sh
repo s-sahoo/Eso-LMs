@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -J sample_owt_esolm
 #SBATCH --partition=main
-#SBATCH --output=slurm/%j_%x.out
-#SBATCH --error=slurm/%j_%x.err
+#SBATCH --output=log/gen_ppl/%j_%x.out
+#SBATCH --error=log/gen_ppl/%j_%x.err
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
@@ -18,6 +18,7 @@ while [[ "$#" -gt 0 ]]; do
         --batch_size) batch_size="$2"; shift ;;
         --num_batches) num_batches="$2"; shift ;;
         --ckpt_path) ckpt_path="$2"; shift ;;
+        --profile_throughput) profile_throughput="$2"; shift ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -28,6 +29,7 @@ echo $T
 echo $batch_size
 echo $num_batches
 echo $ckpt_path
+echo $profile_throughput
 
 nvidia-smi
 nvcc --version
@@ -50,4 +52,5 @@ srun python -u -m main \
   sampling.num_sample_batches=$num_batches \
   sampling.steps=$T \
   sampling.p_nucleus=0.9 \
+  sampling.profile_throughput=$profile_throughput \
   +wandb.offline=true

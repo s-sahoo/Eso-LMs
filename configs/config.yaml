@@ -34,6 +34,7 @@ sampling:
   stride_length: 1
   num_strides: 1
   kv_cache: False
+  profile_throughput: False
 
 training:
   ema: 0.9999
