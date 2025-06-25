@@ -365,13 +365,13 @@ class TrainerBase(L.LightningModule):
     """Generate samples from the model."""
     # Lightning auto-casting is not working in this method for some reason
     self._eval_mode(sample_eval)
-    samples = self.generate_samples(
+    samples, nfe, duration = self.generate_samples(
       num_samples=self.config.loader.eval_batch_size,
       num_steps=num_steps,
       eps=eps)
     if not sample_eval:
       self._train_mode()
-    return samples
+    return samples, nfe, duration
 
   def _process_model_input(self, x0, valid_tokens):
     raise NotImplementedError

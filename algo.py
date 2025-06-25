@@ -115,13 +115,13 @@ class MDLM(trainer_base.AbsorbingState):
 
   @torch.no_grad()
   def _ddpm_caching_update(self, x, t, dt, p_x0=None):
-    _, stay_chance_t = self.noise(t)
-    _, stay_chance_s = self.noise(t - dt)
-    move_chance_t = 1 - stay_chance_t
-    move_chance_s = 1 - stay_chance_s
-    move_chance_t = move_chance_t[:, None]
-    move_chance_s = move_chance_s[:, None]
-    mask_prob = move_chance_s / move_chance_t
+    # _, stay_chance_t = self.noise(t)
+    # _, stay_chance_s = self.noise(t - dt)
+    # move_chance_t = 1 - stay_chance_t
+    # move_chance_s = 1 - stay_chance_s
+    # move_chance_t = move_chance_t[:, None]
+    # move_chance_s = move_chance_s[:, None]
+    # mask_prob = move_chance_s / move_chance_t
 
     # if p_x0 is None:
     assert not self.config.algo.time_conditioning
@@ -169,6 +169,7 @@ class MDLM(trainer_base.AbsorbingState):
     timesteps = torch.linspace(1, 0, num_steps, 
                                device=self.device)
     self.gumbel_noise = None
+    torch.cuda.synchronize()
     start = time.perf_counter()
     for i in range(num_steps):
       print(f'step {i} / {num_steps}')
@@ -181,6 +182,7 @@ class MDLM(trainer_base.AbsorbingState):
           dt=dt,
           p_x0=p_x0_cache)
       x_accum = x_next
+    torch.cuda.synchronize()
     end = time.perf_counter()
     print(end - start)
     return x_accum
@@ -397,6 +399,7 @@ class EsoLM(MDLM):
     if profile_throughput:
       torch.cuda.synchronize()
     start = time.perf_counter()
+    nfe = 0
     for i, k in enumerate(unmask_k_tokens):
       if i == 0:
         last_k_start = 0
@@ -408,6 +411,7 @@ class EsoLM(MDLM):
         last_k_start=last_k_start,
         curr_k_start=unmasked_tokens,  # also last_k_end
         curr_k_end=unmasked_tokens+k)
+      nfe += 1
       if not profile_throughput:
         logits[:, :, self.mask_index] = self.neg_infinity
         if self.config.sampling.p_nucleus < 1:
@@ -425,9 +429,10 @@ class EsoLM(MDLM):
     if profile_throughput:
       torch.cuda.synchronize()
     end = time.perf_counter()
-    print(f'Sampling duration: {end - start} seconds')
+    duration = end - start
+    print(f'Sampling duration: {duration} seconds')
     self.backbone.reset_kv_cache()
     self.backbone.reset_sorted_rotary_cache()
     sort_idx_reversed = utils.get_reverse_indices(sort_idx)
     x = torch.gather(x, dim=1, index=sort_idx_reversed)
-    return x
+    return x, float(nfe), duration

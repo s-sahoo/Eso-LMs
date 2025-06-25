@@ -99,6 +99,8 @@ def _generate_samples(diffusion_model, config, logger,
   stride_length = config.sampling.stride_length
   num_strides = config.sampling.num_strides
   all_samples = []
+  nfes = []
+  durations = []
   for _ in range(config.sampling.num_sample_batches):
     if config.sampling.semi_ar:
       _, intermediate_samples, _ = model.restore_model_and_semi_ar_sample(
@@ -112,7 +114,7 @@ def _generate_samples(diffusion_model, config, logger,
       # and diffusion.compute_generative_perplexity() discards
       # any text after the first EOS token.
     else:
-      samples = model.restore_model_and_sample(
+      samples, nfe, duration = model.restore_model_and_sample(
         num_steps=config.sampling.steps, 
         sample_eval=True)  # delete ema after first use to save memory
       model.metrics.record_entropy(samples)
@@ -120,6 +122,8 @@ def _generate_samples(diffusion_model, config, logger,
       model.metrics.record_generative_perplexity(
         text_samples, config.model.length, model.device)
       all_samples.extend(list(text_samples))
+      nfes.append(nfe)
+      durations.append(duration)
   generative_ppl = 0.
   entropy = 0.
   if not config.sampling.semi_ar:
@@ -128,10 +132,17 @@ def _generate_samples(diffusion_model, config, logger,
     print('Generative perplexity:', generative_ppl)
     print('Sample entropy:', entropy)
   samples_path = config.eval.generated_samples_path
-  with fsspec.open(samples_path, 'w', encoding='utf-8') as f:
+  with fsspec.open(samples_path, 'w', encoding='utf-8') as f:      
     data = {'generative_ppl': generative_ppl,
             'entropy': entropy,
+            'nfe_mean': torch.mean(torch.tensor(nfes)).item(),
+            'nfe_std': torch.std(torch.tensor(nfes)).item(),
+            'duration_mean': torch.mean(torch.tensor(durations)).item(),
+            'duration_std': torch.std(torch.tensor(durations)).item(),
             'generated_seqs': all_samples}
+    if len(durations) > 1:
+      data['duration_accurate_mean'] = torch.mean(torch.tensor(durations[1:])).item()
+      data['duration_accurate_std'] = torch.std(torch.tensor(durations[1:])).item()
     json.dump(data, f, ensure_ascii=False, indent=4)
   print('Samples saved at:', samples_path)
 

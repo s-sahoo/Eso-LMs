@@ -21,7 +21,7 @@ export HYDRA_FULL_ERROR=1
 
 srun python -u -m main \
   mode=sample_eval \
-  loader.eval_batch_size=512 \
+  loader.eval_batch_size=1024 \
   model.length=1024 \
   model=small \
   algo=mdlm \
