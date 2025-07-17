@@ -11,22 +11,43 @@
 # To enable preemption re-loading, set `hydra.run.dir` or 
 # `checkpointing.save_dir` explicitly.
 
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --T) T="$2"; shift ;;
+        --batch_size) batch_size="$2"; shift ;;
+        --num_batches) num_batches="$2"; shift ;;
+        --ckpt_path) ckpt_path="$2"; shift ;;
+        --profile_throughput) profile_throughput="$2"; shift ;;
+        --samples_path) samples_path="$2"; shift ;;  # optional
+        --seed) seed="$2"; shift ;;  # optional
+        *) echo "Unknown parameter: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+echo $T
+echo $batch_size
+echo $num_batches
+echo $ckpt_path
+echo $profile_throughput
+echo $samples_path
 
 nvidia-smi
 nvcc --version
-
-checkpoint_path="/mnt/weka/home/zhihan.yang/checkpoints/owt-mdlm-302860/checkpoints/14-250000.ckpt"
 
 export HYDRA_FULL_ERROR=1
 
 srun python -u -m main \
   mode=sample_eval \
-  loader.eval_batch_size=1024 \
+  loader.eval_batch_size=$batch_size \
   model.length=1024 \
   model=small \
   algo=mdlm \
-  eval.checkpoint_path=${checkpoint_path} \
-  sampling.num_sample_batches=2 \
-  sampling.p_nucleus=1.0 \
-  sampling.steps=8 \
+  eval.checkpoint_path=$ckpt_path \
+  sampling.num_sample_batches=$num_batches \
+  sampling.p_nucleus=0.9 \
+  sampling.steps=$T \
+  sampling.profile_throughput=$profile_throughput \
+  ${samples_path:+eval.generated_samples_path="$samples_path"} \
+  ${seed:+seed=$seed} \
   +wandb.offline=true

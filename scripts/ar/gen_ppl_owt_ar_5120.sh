@@ -26,7 +26,6 @@ srun python -u -m main \
   algo=ar \
   eval.checkpoint_path=$checkpoint_path \
   sampling.kv_cache=True \
-  sampling.num_sample_batches=2 \
+  sampling.num_sample_batches=10 \
   sampling.p_nucleus=0.9 \
   +wandb.offline=true
-  

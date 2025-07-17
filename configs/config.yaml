@@ -7,7 +7,7 @@ defaults:
   - /noise: log-linear
   - /lr_scheduler: constant_warmup
   - /prior: none
-  - /algo: elmo
+  - /algo: esolm
 
 mode: train  # train / ppl_eval / sample_eval
 

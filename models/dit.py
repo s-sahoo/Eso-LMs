@@ -454,7 +454,8 @@ class DDiTBlockCausal(nn.Module):
     if (self.k_cache is None
         and self.v_cache is None):
       self.k_cache = torch.empty(
-        k.shape[0], self.num_tokens, self.n_heads, 
+        k.shape[0], self.num_tokens,  # in case of prepending
+        self.n_heads, 
         self.dim // self.n_heads,
         device=k.device, dtype=k.dtype
       )
@@ -812,7 +813,10 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
 
     if kv_cache:
       # create dummy constant-length input to avoid recomputing cos and sin
-      dummy_x = torch.zeros(1, self.config.model.length).to(x.device)
+      length = self.config.model.length
+      if self.config.algo.prepend_token in ['bos', 'mask']:
+        length += 1
+      dummy_x = torch.zeros(1, length).to(x.device)
       rotary_cos_sin = self.rotary_emb(dummy_x)
       cos, sin = rotary_cos_sin
       cos = cos[:, seq_len_so_far:seq_len_so_far+1]

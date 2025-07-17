@@ -33,9 +33,26 @@ class AR(trainer_base.TrainerBase):
     assert self.config.prior.type == 'none'
 
   def _process_model_input(self, x0, valid_tokens):
-    input_tokens = x0[:, :-1]
-    output_tokens = x0[:, 1:]
-    valid_tokens = valid_tokens[:, 1:]
+    if self.config.algo.prepend_token == 'bos':
+      bs = x0.shape[0]
+      bos = torch.ones(
+        bs, 1, dtype=torch.long, 
+        device=x0.device) * self.tokenizer.bos_token_id
+      input_tokens = torch.cat([bos, x0[:, :-1]], dim=-1)
+      output_tokens = x0
+      valid_tokens = valid_tokens
+    elif self.config.algo.prepend_token == 'mask':
+      bs = x0.shape[0]
+      mask = torch.ones(
+        bs, 1, dtype=torch.long, 
+        device=x0.device) * self.mask_index
+      input_tokens = torch.cat([mask, x0[:, :-1]], dim=-1)
+      output_tokens = x0
+      valid_tokens = valid_tokens
+    elif self.config.algo.prepend_token == 'none':
+      input_tokens = x0[:, :-1]
+      output_tokens = x0[:, 1:]
+      valid_tokens = valid_tokens[:, 1:]
     return input_tokens, output_tokens, valid_tokens
 
   def nll(self, input_tokens, output_tokens,
@@ -50,36 +67,56 @@ class AR(trainer_base.TrainerBase):
   @torch.no_grad()
   def generate_samples(self, num_samples, **kwargs):
     # precompute token buffer
-    num_pred_tokens = self.num_tokens - 1
+    if self.config.algo.prepend_token == 'bos':
+      num_pred_tokens = self.num_tokens
+    elif self.config.algo.prepend_token == 'mask':
+      num_pred_tokens = self.num_tokens
+    elif self.config.algo.prepend_token == 'none':
+      num_pred_tokens = self.num_tokens - 1
+
     x = torch.zeros(
       (num_samples, num_pred_tokens + 1),
       dtype=torch.long,
       device=self.device)
-    x[:, 0] = self.tokenizer.bos_token_id
+
+    if self.config.algo.prepend_token == 'bos':
+      x[:, 0] = self.tokenizer.bos_token_id
+    elif self.config.algo.prepend_token == 'mask':
+      x[:, 0] = self.mask_index
+    elif self.config.algo.prepend_token == 'none':
+      x[:, 0] = self.tokenizer.bos_token_id
+
     kv_cache = self.config.sampling.kv_cache
     self.backbone.reset_kv_cache()
-    torch.cuda.synchronize()
+    profile_throughput = self.config.sampling.profile_throughput
+    if profile_throughput:
+      torch.cuda.synchronize()
     start = time.perf_counter()
+    nfe = 0
     for i in range(num_pred_tokens):
-      print(f'Step {i+1} / {num_pred_tokens}')
       output = self.backbone(
         x[:, :i + 1], sigma=None, x0=None, kv_cache=kv_cache)
-      output[:, :, self.mask_index] = self.neg_infinity
-      if self.config.sampling.p_nucleus < 1:
-        output = output.to(torch.float64)
-        output = utils.top_k_top_p_filtering(
-          output, top_p=self.config.sampling.p_nucleus)
-      # generate noise on the fly to avoid memory issues
-      u = torch.rand((x.shape[0], self.vocab_size),
-                      dtype=torch.float64, device=self.device)
-      noise = -torch.log(-torch.log(u))
-      y = (output[:, -1, :] + noise).argmax(-1)
-      x[:, i + 1] = y
-    torch.cuda.synchronize()
+      nfe += 1
+      if not profile_throughput:
+        output[:, :, self.mask_index] = self.neg_infinity
+        if self.config.sampling.p_nucleus < 1:
+          output = output.to(torch.float64)
+          output = utils.top_k_top_p_filtering(
+            output, top_p=self.config.sampling.p_nucleus)
+        # generate noise on the fly to avoid memory issues
+        u = torch.rand((x.shape[0], self.vocab_size),
+                        dtype=torch.float64, device=self.device)
+        noise = -torch.log(-torch.log(u))
+        y = (output[:, -1, :] + noise).argmax(-1)
+        x[:, i + 1] = y
+    if profile_throughput:
+      torch.cuda.synchronize()
     duration = time.perf_counter() - start
+    print(f'Sampling duration: {duration} seconds')
     self.backbone.reset_kv_cache()
-    print(f'Total duration: {duration} seconds')
-    return x
+    if self.config.algo.prepend_token in ['bos', 'mask']:
+      x = x[:, 1:]
+    return x, float(nfe), duration
 
   def _process_sigma(self, sigma):
     del sigma
@@ -111,51 +148,62 @@ class MDLM(trainer_base.AbsorbingState):
     if low_var:
       return -log_p_theta
     else:
-      return dalpha_t / (1 - alpha_t) * log_p_theta    
+      return dalpha_t / (1 - alpha_t) * log_p_theta
+    
+  def _sample_nfe(self, num_steps):
+    remaining_tokens = self.num_tokens
+    num_tokens_to_unmask = []
+    dt = 1 / num_steps
+    # Assumes a log-linear schedule.
+    for t in np.linspace(1, dt, num_steps):
+      _, alpha_t = self.noise(t)
+      _, alpha_s = self.noise(t - dt)
+      n_unmask = np.random.binomial(
+        remaining_tokens, (alpha_s - alpha_t) / (1 - alpha_t))
+      if n_unmask != 0:
+        num_tokens_to_unmask.append(n_unmask)
+        remaining_tokens -= n_unmask
+    assert remaining_tokens == 0
+    return len(num_tokens_to_unmask)
 
   @torch.no_grad()
   def _ddpm_caching_update(self, x, t, dt, p_x0=None):
-    # _, stay_chance_t = self.noise(t)
-    # _, stay_chance_s = self.noise(t - dt)
-    # move_chance_t = 1 - stay_chance_t
-    # move_chance_s = 1 - stay_chance_s
-    # move_chance_t = move_chance_t[:, None]
-    # move_chance_s = move_chance_s[:, None]
-    # mask_prob = move_chance_s / move_chance_t
+    assert torch.all(t - dt >= 0)
+    _, stay_chance_t = self.noise(t)
+    _, stay_chance_s = self.noise(t - dt)
+    move_chance_t = 1 - stay_chance_t
+    move_chance_s = 1 - stay_chance_s
+    move_chance_t = move_chance_t[:, None]
+    move_chance_s = move_chance_s[:, None]
+    mask_prob = move_chance_s / move_chance_t
 
-    # if p_x0 is None:
-    assert not self.config.algo.time_conditioning
-    sigma_t = torch.zeros(x.shape[0], device=x.device)
-    print('network evaluation')
-    logits_unnorm = self.backbone(x, sigma_t)
-    #logits_unnorm[:, :, self.mask_index] = self.neg_infinity
-    # if self.config.sampling.p_nucleus < 1:
-    #   output = utils.top_k_top_p_filtering(
-    #     output, top_p=self.config.sampling.p_nucleus)
-    #p_x0 = logits_unnorm.softmax(dim=-1)
+    if p_x0 is None:
+      assert not self.config.algo.time_conditioning
+      sigma_t = torch.zeros(x.shape[0], device=x.device)
+      logits_p_x0 = self.backbone(x, sigma_t)
+      logits_p_x0[:, :, self.mask_index] = self.neg_infinity
+      if self.config.sampling.p_nucleus < 1:
+        logits_p_x0 = logits_p_x0.to(torch.float64)
+        logits_p_x0 = utils.top_k_top_p_filtering(
+          logits_p_x0, top_p=self.config.sampling.p_nucleus)
+      p_x0 = logits_p_x0.softmax(dim=-1)
 
-    # q_xs = p_x0 * (1 - mask_prob)
-    # q_xs[:, :, self.mask_index] = mask_prob.squeeze(-1)
-    # logits_unnorm = torch.log(q_xs)
-    
-    # if self.gumbel_noise is None:
-    #   if self.config.sampling.use_float64:
-    #     sampling_dtype = torch.float64
-    #   u = torch.rand((x.shape[0], self.num_tokens, self.vocab_size), 
-    #                   dtype=sampling_dtype).to(self.device)
-    #   self.gumbel_noise = -torch.log(-torch.log(u))
-    #self.gumbel_noise
+    q_xs = p_x0 * (1 - mask_prob)
+    q_xs[:, :, self.mask_index] = mask_prob.squeeze(-1)
+    logits_q_xs = torch.log(q_xs)
 
-    # x_sample = (logits_unnorm).argmax(-1)
-    # copy_flag = (x != self.mask_index).to(x.dtype)
-    # x_new = copy_flag * x + (1 - copy_flag) * x_sample
+    u = torch.rand((x.shape[0], self.num_tokens, self.vocab_size), 
+                    dtype=torch.float64, device=self.device)
+    noise = -torch.log(-torch.log(u))
 
-    x_new = x
+    x_sample = (logits_q_xs + noise).argmax(-1)
+    copy_flag = (x != self.mask_index).to(x.dtype)
+    x_new = copy_flag * x + (1 - copy_flag) * x_sample
 
     if not torch.allclose(x_new, x):
       return None, x_new
     else:
-      return None, x_new
+      return p_x0, x_new
 
   @torch.no_grad()
   def generate_samples(self, num_samples, num_steps=None, **kwargs):
@@ -166,26 +214,36 @@ class MDLM(trainer_base.AbsorbingState):
                       device=self.device)
     dt = 1 / num_steps
     p_x0_cache = None
-    timesteps = torch.linspace(1, 0, num_steps, 
+    timesteps = torch.linspace(1, dt, num_steps, 
                                device=self.device)
-    self.gumbel_noise = None
-    torch.cuda.synchronize()
+    profile_throughput = self.config.sampling.profile_throughput
+    if profile_throughput:
+      torch.cuda.synchronize()
     start = time.perf_counter()
-    for i in range(num_steps):
-      print(f'step {i} / {num_steps}')
-      # if self.mask_index not in x_accum:
-      #   break
-      t = timesteps[i]
-      p_x0_cache, x_next = self._ddpm_caching_update(
-          x=x_accum,
-          t=t * ones,
-          dt=dt,
-          p_x0=p_x0_cache)
-      x_accum = x_next
-    torch.cuda.synchronize()
+    if profile_throughput:
+      nfe = self._sample_nfe(num_steps)
+      for i in range(nfe):
+        sigma_t = torch.zeros(
+          x_accum.shape[0], device=x_accum.device)
+        _ = self.backbone(x_accum, sigma_t)
+    else:
+      nfe = 0
+      for i in range(num_steps):
+        if self.mask_index not in x_accum:
+          break
+        t = timesteps[i]
+        if p_x0_cache is None:
+          nfe += 1
+        p_x0_cache, x_next = self._ddpm_caching_update(
+            x=x_accum, t=t * ones, dt=dt, p_x0=p_x0_cache)
+        x_accum = x_next
+      assert self.mask_index not in x_accum
+    if profile_throughput:
+      torch.cuda.synchronize()
     end = time.perf_counter()
-    print(end - start)
-    return x_accum
+    duration = end - start
+    print(duration)
+    return x_accum, float(nfe), duration
 
 
 class EsoLM(MDLM):
