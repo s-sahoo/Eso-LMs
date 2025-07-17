@@ -452,6 +452,7 @@ class EsoLM(MDLM):
     assert sum(unmask_k_tokens) == self.num_tokens
     unmasked_tokens = 0
     self.backbone.reset_kv_cache()
+    # orderings are different across batch, hence the need to reset
     self.backbone.reset_sorted_rotary_cache()
     profile_throughput = self.config.sampling.profile_throughput
     if profile_throughput:
