@@ -108,10 +108,13 @@ class TrainerBase(L.LightningModule):
     # different randomness for different ranks
     # does not affect dataloading seed
     del stage
-    new_seed = self.config.seed + self.trainer.global_rank 
-    torch.manual_seed(new_seed)
-    np.random.seed(new_seed)
-    random.seed(new_seed)
+    if self.config.data.train != 'lm1b':
+      new_seed = self.config.seed + self.trainer.global_rank 
+      torch.manual_seed(new_seed)
+      np.random.seed(new_seed)
+      random.seed(new_seed)
+    else:
+      print('not using rankwise randomness')
 
   def _validate_configuration(self):
     assert self.config.algo.backbone in {'dit', 'hf_dit', 

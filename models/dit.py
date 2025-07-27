@@ -157,7 +157,7 @@ def _get_seq_mask_prefix_lm(seq_len, cutoffs):
 
 flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='reduce-overhead')
 # flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='max-autotune-no-cudagraphs')
-# flex_attention_compiled = flex_attention
+# flex_attention_compiled = torch.compile(flex_attention)
 # flex_attention_compiled = torch.compile(flex_attention, dynamic=True)
 
 

@@ -19,6 +19,7 @@ while [[ "$#" -gt 0 ]]; do
         --num_batches) num_batches="$2"; shift ;;
         --ckpt_path) ckpt_path="$2"; shift ;;
         --profile_throughput) profile_throughput="$2"; shift ;;
+        --length) length="$2"; shift ;;  # optional
         --samples_path) samples_path="$2"; shift ;;  # optional
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
@@ -41,8 +42,8 @@ export HYDRA_FULL_ERROR=1
 srun python -u -m main \
   mode=sample_eval \
   loader.eval_batch_size=$batch_size \
-  model.length=1024 \
   model=small \
+  ${length:+model.length="$length"} \
   algo=esolm \
   algo.alpha_0=$alpha_0 \
   algo.diffusion_attn_mode=causal \

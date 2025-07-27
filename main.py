@@ -122,7 +122,8 @@ def _generate_samples(diffusion_model, config, logger,
         model.metrics.record_entropy(samples)
         text_samples = model.tokenizer.batch_decode(samples)
         model.metrics.record_generative_perplexity(
-          text_samples, config.model.length, model.device)
+          text_samples, config.model.length, 
+          retokenize=True, device=model.device)
         all_samples.extend(list(text_samples))
       nfes.append(nfe)
       durations.append(duration)
