@@ -28,6 +28,9 @@ def _load_from_checkpoint(diffusion_model, config, tokenizer):
     return diffusion_model(
       config, tokenizer=tokenizer).to('cuda')
   
+  # model = diffusion_model(config, tokenizer=tokenizer).to('cuda')
+  # print('finished loading model')
+  # return model
   return diffusion_model.load_from_checkpoint(
     config.eval.checkpoint_path,
     tokenizer=tokenizer,

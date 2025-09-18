@@ -21,6 +21,8 @@ while [[ "$#" -gt 0 ]]; do
         --length) length="$2"; shift ;;  # optional
         --samples_path) samples_path="$2"; shift ;;  # optional
         --seed) seed="$2"; shift ;;  # optional
+        --use_ar_order) use_ar_order="$2"; shift ;;  # optional
+        --use_block_ar_order) use_block_ar_order="$2"; shift ;;  # optional
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -32,6 +34,7 @@ echo $num_batches
 echo $ckpt_path
 echo $profile_throughput
 echo $samples_path
+echo $use_ar_order
 
 nvidia-smi
 nvcc --version
@@ -51,4 +54,6 @@ srun python -u -m main \
   sampling.profile_throughput=$profile_throughput \
   ${samples_path:+eval.generated_samples_path="$samples_path"} \
   ${seed:+seed=$seed} \
+  ${use_ar_order:+sampling.use_ar_order=$use_ar_order} \
+  ${use_block_ar_order:+sampling.use_block_ar_order=$use_block_ar_order} \
   +wandb.offline=true

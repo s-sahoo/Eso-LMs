@@ -227,17 +227,53 @@ class MDLM(trainer_base.AbsorbingState):
           x_accum.shape[0], device=x_accum.device)
         _ = self.backbone(x_accum, sigma_t)
     else:
-      nfe = 0
-      for i in range(num_steps):
-        if self.mask_index not in x_accum:
-          break
-        t = timesteps[i]
-        if p_x0_cache is None:
-          nfe += 1
-        p_x0_cache, x_next = self._ddpm_caching_update(
-            x=x_accum, t=t * ones, dt=dt, p_x0=p_x0_cache)
-        x_accum = x_next
-      assert self.mask_index not in x_accum
+      if self.config.sampling.use_ar_order:
+        sigma_t = torch.zeros(x_accum.shape[0], device=x_accum.device)
+        for i in range(self.config.model.length):
+          logits_p_x0 = self.backbone(x_accum, sigma_t)
+          logits_p_x0 = logits_p_x0[:, i]  # [bs, vocab size]
+          logits_p_x0[:, self.mask_index] = self.neg_infinity
+          if self.config.sampling.p_nucleus < 1:
+            logits_p_x0 = logits_p_x0.to(torch.float64)
+            logits_p_x0 = utils.top_k_top_p_filtering(
+              logits_p_x0, top_p=self.config.sampling.p_nucleus)
+          u = torch.rand((x_accum.shape[0], self.vocab_size), 
+                    dtype=torch.float64, device=self.device)
+          noise = -torch.log(-torch.log(u))
+          x_sample = (logits_p_x0 + noise).argmax(-1)
+          x_accum[:, i] = x_sample
+        nfe = self.config.model.length
+      elif self.config.sampling.use_block_ar_order:
+        sigma_t = torch.zeros(x_accum.shape[0], device=x_accum.device)
+        subcontext_length = self.config.model.length // 4
+        for pos_within_subcontext in range(subcontext_length):
+          logits_p_x0 = self.backbone(x_accum, sigma_t)
+          for num_subcontext in range(4):
+            i = num_subcontext * subcontext_length + pos_within_subcontext
+            logits_p_x0_ = logits_p_x0[:, i]  # [bs, vocab size]
+            logits_p_x0_[:, self.mask_index] = self.neg_infinity
+            if self.config.sampling.p_nucleus < 1:
+              logits_p_x0_ = logits_p_x0_.to(torch.float64)
+              logits_p_x0_ = utils.top_k_top_p_filtering(
+                logits_p_x0_, top_p=self.config.sampling.p_nucleus)
+            u = torch.rand((x_accum.shape[0], self.vocab_size), 
+                      dtype=torch.float64, device=self.device)
+            noise = -torch.log(-torch.log(u))
+            x_sample = (logits_p_x0_ + noise).argmax(-1)
+            x_accum[:, i] = x_sample
+        nfe = subcontext_length
+      else:
+        nfe = 0
+        for i in range(num_steps):
+          if self.mask_index not in x_accum:
+            break
+          t = timesteps[i]
+          if p_x0_cache is None:
+            nfe += 1
+          p_x0_cache, x_next = self._ddpm_caching_update(
+              x=x_accum, t=t * ones, dt=dt, p_x0=p_x0_cache)
+          x_accum = x_next
+        assert self.mask_index not in x_accum
     if profile_throughput:
       torch.cuda.synchronize()
     end = time.perf_counter()

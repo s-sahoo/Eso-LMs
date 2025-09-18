@@ -54,7 +54,7 @@ srun python -u -m main \
   sampling.kv_cache=True \
   sampling.num_sample_batches=$num_batches \
   sampling.steps=$T \
-  sampling.p_nucleus=0.9 \
+  sampling.p_nucleus=1.0 \
   sampling.profile_throughput=$profile_throughput \
   ${samples_path:+eval.generated_samples_path="$samples_path"} \
   +wandb.offline=true

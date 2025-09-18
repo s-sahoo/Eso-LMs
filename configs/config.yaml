@@ -35,6 +35,8 @@ sampling:
   num_strides: 1
   kv_cache: False
   profile_throughput: False
+  use_ar_order: False  # only relevant for MDLM
+  use_block_ar_order: False  # only relevant for MDLM
 
 training:
   ema: 0.9999

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-Ts=(8 16 32 64 128 256 1024 4096)
+# Ts=(8 16 32 64 128 256 1024 4096)
+Ts=(48)
 
 CKPT_PATH="/mnt/weka/home/zhihan.yang/checkpoints/owt-mdlm-302860/checkpoints/14-250000.ckpt"
 SAMPLES_DIR="/mnt/weka/home/zhihan.yang/Eso-LMs/log/throughput/mdlm"

@@ -25,13 +25,13 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-ar-${n_blocks}-${SLURM_JOB_ID}
+RUN_NAME=owt-ar-tiny-${n_blocks}-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
   loader.batch_size=64 \
   loader.eval_batch_size=64 \
-  model=small \
+  model=tiny \
   model.n_blocks=$n_blocks \
   data=openwebtext-split \
   +data.insert_train_special=False \
