@@ -305,8 +305,54 @@ class EsoLM(MDLM):
     sort_idx = (masked + offsets).argsort(descending=False)
     return sort_idx
 
+  def _any_order_ar_loss(self, x0):
+    # x0 has no mask, so sort_idx would be completely random
+    offsets = torch.rand(1, self.num_tokens, device='cuda')
+    sort_idx = offsets.argsort(descending=False)
+    sort_idx = sort_idx.expand(x0.shape[0], self.num_tokens)
+    x0 = torch.gather(x0, dim=1, index=sort_idx)
+    z0 = self.q_xt(x0, 0)
+    # our model is time invariant, so whatever t to pass
+    dummy_t0 = torch.zeros(1, z0.shape[0], dtype=self.dtype,
+                           device=self.device)
+    output = self.forward(
+      z0, dummy_t0, sort_idx, x0=x0)
+    output[:, :, self.mask_index] = self.neg_infinity
+    output = output.log_softmax(-1)
+    logp_per_token = output.gather(
+      -1, x0[:, :, None])[:, :, 0]
+    logp_per_seq = logp_per_token.sum(dim=1)
+    return logp_per_seq
+
+  def _importance_weighted_loss(self, x0):
+    batch_size = x0.shape[0]
+    num_orders = self.config.eval.num_iw_orders
+    num_orderings_torch = torch.tensor(
+      [num_orders], device='cuda')
+    logp_per_seq_per_order = torch.zeros(
+      (batch_size, num_orders), device='cuda')
+    for i in range(num_orders):
+      logp_per_seq_one_order = self._any_order_ar_loss(x0)
+      assert logp_per_seq_one_order.shape[0] == batch_size
+      logp_per_seq_per_order[:, i] = logp_per_seq_one_order
+    logp_per_seq = (
+      torch.log(1/num_orderings_torch) + 
+      torch.logsumexp(logp_per_seq_per_order, dim=1))
+    loss = - logp_per_seq.sum()  # as total nll
+    num_tokens = batch_size * self.num_tokens
+    loss_per_token = loss / num_tokens
+
+    return trainer_base.Loss(
+        loss=loss_per_token,
+        nlls=loss_per_token * num_tokens,
+        reconstruction_loss=0,
+        num_tokens=num_tokens)
+
   def _loss(self, x0, valid_tokens, 
             current_accumulation_step=None, train_mode=False):
+    if self.config.eval.num_iw_orders > 0:
+      return self._importance_weighted_loss(x0)
+
     batch_size = x0.shape[0]
     # batch size used for diffusion loss
     split_batch = int(
