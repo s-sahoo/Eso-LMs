@@ -37,6 +37,8 @@ sampling:
   profile_throughput: False
   use_ar_order: False  # only relevant for MDLM
   use_block_ar_order: False  # only relevant for MDLM
+  subcontext_len: 0  # only relevant for EsoLM
+  subcontext_shuffle: False  # only relevant for EsoLM
 
 training:
   ema: 0.9999
@@ -55,6 +57,7 @@ eval:
   gen_ppl_eval_model_name_or_path: gpt2-large  # gpt2-large, meta-llama/Llama-2-7b-hf
   generate_samples: True
   generated_samples_path: ${cwd:}/samples.json
+  num_iw_orders: 0  # number of orders to sample for importance weighted bound
 
 optim:
   weight_decay: 0

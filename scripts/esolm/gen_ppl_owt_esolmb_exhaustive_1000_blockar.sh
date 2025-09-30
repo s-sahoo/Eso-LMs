@@ -17,18 +17,28 @@ EVAL_ALPHAS=(1)
 
 # ============================  MAIN LOOP  ==========================
 for alpha_train in "${!CKPT_PATHS[@]}"; do
-  ckpt_path="${CKPT_PATHS[$alpha_train]}"
-
   for alpha_eval in "${EVAL_ALPHAS[@]}"; do
-    # Choose T-set based on alpha_eval
-    # if [[ $(printf "%.4f" "${alpha_eval}") == "1.0000" ]]; then
-    #   Ts=(16 32 64 128 256 1024 4096)
-    # else
-    #   Ts=(16 128 1024)
-    # fi
-    Ts=(32)
 
-    for T in "${Ts[@]}"; do
+    if [[ $(printf "%.4f" "${alpha_eval}") == "1.0000" ]]; then
+      # SUBCONTEXT_LENS=(16 32 64 128 256 512)
+      SUBCONTEXT_LENS=(1024)
+    fi
+
+    if [[ $(printf "%.4f" "${alpha_eval}") == "0.5000" ]]; then
+      SUBCONTEXT_LENS=(256)  # this is effectively 256 * 0.5 = 128
+    fi
+
+    if [[ $(printf "%.4f" "${alpha_eval}") == "0.2500" ]]; then
+      SUBCONTEXT_LENS=(256)  # this is effectively 256 * 0.25 = 64
+    fi
+
+    if [[ $(printf "%.4f" "${alpha_eval}") == "0.0625" ]]; then
+      SUBCONTEXT_LENS=(256)  # this is effectively 256 * 0.0625 = 16
+    fi
+
+  ckpt_path="${CKPT_PATHS[$alpha_train]}"
+  
+    for SUBCONTEXT_LEN in "${SUBCONTEXT_LENS[@]}"; do
 
       mkdir -p log/samples/train_${alpha_train}/eval_${alpha_eval}
 
@@ -39,8 +49,9 @@ for alpha_train in "${!CKPT_PATHS[@]}"; do
         --num_batches 10 \
         --ckpt_path "${ckpt_path}" \
         --profile_throughput False \
-        --samples_path "/mnt/weka/home/zhihan.yang/Eso-LMs/log/samples_1000/esolmb_blockwise/train_${alpha_train}/eval_${alpha_eval}/${T}.json"
-
+        --subcontext_len "${SUBCONTEXT_LEN}" \
+        --subcontext_shuffle True \
+        --samples_path "/mnt/weka/home/zhihan.yang/Eso-LMs/log/samples_5120/esolmb_blockar_shuffle/train_${alpha_train}/eval_${alpha_eval}/${SUBCONTEXT_LEN}.json"
     done
   done
 done
