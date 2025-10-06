@@ -14,7 +14,7 @@
 nvidia-smi
 nvcc --version
 
-checkpoint_path="/mnt/weka/home/zhihan.yang/checkpoints/owt-ar-prepend-mask-431810/checkpoints/14-250000.ckpt"
+CKPT_PATH=${HOME}/checkpoints/owt-ar-prepend-mask-431810/checkpoints/14-250000.ckpt
 
 export HYDRA_FULL_ERROR=1
 
@@ -25,8 +25,9 @@ srun python -u -m main \
   model=small \
   algo=ar \
   algo.prepend_token=mask \
-  eval.checkpoint_path=$checkpoint_path \
+  eval.checkpoint_path=$CKPT_PATH \
   sampling.kv_cache=True \
   sampling.num_sample_batches=10 \
   sampling.p_nucleus=0.9 \
+  eval.generated_samples_path=${HOME}/Eso-LMs/log/samples_5120/ar/samples_prepend_mask.json \
   +wandb.offline=true

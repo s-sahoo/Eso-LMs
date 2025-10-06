@@ -15,12 +15,12 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-mdlm-8192-${SLURM_JOB_ID}
+RUN_NAME=owt-mdlm-10240-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
-  loader.batch_size=64 \
-  loader.eval_batch_size=64 \
+  loader.batch_size=8 \
+  loader.eval_batch_size=8 \
   model=small \
   data=openwebtext-split \
   +data.insert_train_special=False \
@@ -30,10 +30,10 @@ srun python -u -m main \
   model.length=10240 \
   eval.generate_samples=False \
   eval.compute_generative_perplexity=False \
-  trainer.val_check_interval=10000 \
+  trainer.val_check_interval=5000 \
   callbacks.checkpoint_every_n_steps.every_n_train_steps=50000 \
   trainer.log_every_n_steps=1000 \
   trainer.max_steps=1000000 \
   data.cache_dir=${DATA_DIR} \
   hydra.run.dir=${CHECKPOINT_DIR} \
-  training.finetune_path=/mnt/weka/home/zhihan.yang/checkpoints/owt-mdlm-302860/checkpoints/14-250000.ckpt
+  training.finetune_path=${HOME}/checkpoints/owt-mdlm-382896/checkpoints/14-250000.ckpt

@@ -26,7 +26,7 @@ nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
 RUN_NAME=owt-ar-${n_blocks}-${SLURM_JOB_ID}
-CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
+CKPT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
   loader.batch_size=64 \
@@ -46,4 +46,4 @@ srun python -u -m main \
   trainer.log_every_n_steps=1000 \
   trainer.max_steps=1000000 \
   data.cache_dir=${DATA_DIR} \
-  hydra.run.dir=${CHECKPOINT_DIR}
+  hydra.run.dir=${CKPT_DIR}
