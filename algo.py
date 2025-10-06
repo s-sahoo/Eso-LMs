@@ -227,17 +227,53 @@ class MDLM(trainer_base.AbsorbingState):
           x_accum.shape[0], device=x_accum.device)
         _ = self.backbone(x_accum, sigma_t)
     else:
-      nfe = 0
-      for i in range(num_steps):
-        if self.mask_index not in x_accum:
-          break
-        t = timesteps[i]
-        if p_x0_cache is None:
-          nfe += 1
-        p_x0_cache, x_next = self._ddpm_caching_update(
-            x=x_accum, t=t * ones, dt=dt, p_x0=p_x0_cache)
-        x_accum = x_next
-      assert self.mask_index not in x_accum
+      if self.config.sampling.use_ar_order:
+        sigma_t = torch.zeros(x_accum.shape[0], device=x_accum.device)
+        for i in range(self.config.model.length):
+          logits_p_x0 = self.backbone(x_accum, sigma_t)
+          logits_p_x0 = logits_p_x0[:, i]  # [bs, vocab size]
+          logits_p_x0[:, self.mask_index] = self.neg_infinity
+          if self.config.sampling.p_nucleus < 1:
+            logits_p_x0 = logits_p_x0.to(torch.float64)
+            logits_p_x0 = utils.top_k_top_p_filtering(
+              logits_p_x0, top_p=self.config.sampling.p_nucleus)
+          u = torch.rand((x_accum.shape[0], self.vocab_size), 
+                    dtype=torch.float64, device=self.device)
+          noise = -torch.log(-torch.log(u))
+          x_sample = (logits_p_x0 + noise).argmax(-1)
+          x_accum[:, i] = x_sample
+        nfe = self.config.model.length
+      elif self.config.sampling.use_block_ar_order:
+        sigma_t = torch.zeros(x_accum.shape[0], device=x_accum.device)
+        subcontext_length = self.config.model.length // 4
+        for pos_within_subcontext in range(subcontext_length):
+          logits_p_x0 = self.backbone(x_accum, sigma_t)
+          for num_subcontext in range(4):
+            i = num_subcontext * subcontext_length + pos_within_subcontext
+            logits_p_x0_ = logits_p_x0[:, i]  # [bs, vocab size]
+            logits_p_x0_[:, self.mask_index] = self.neg_infinity
+            if self.config.sampling.p_nucleus < 1:
+              logits_p_x0_ = logits_p_x0_.to(torch.float64)
+              logits_p_x0_ = utils.top_k_top_p_filtering(
+                logits_p_x0_, top_p=self.config.sampling.p_nucleus)
+            u = torch.rand((x_accum.shape[0], self.vocab_size), 
+                      dtype=torch.float64, device=self.device)
+            noise = -torch.log(-torch.log(u))
+            x_sample = (logits_p_x0_ + noise).argmax(-1)
+            x_accum[:, i] = x_sample
+        nfe = subcontext_length
+      else:
+        nfe = 0
+        for i in range(num_steps):
+          if self.mask_index not in x_accum:
+            break
+          t = timesteps[i]
+          if p_x0_cache is None:
+            nfe += 1
+          p_x0_cache, x_next = self._ddpm_caching_update(
+              x=x_accum, t=t * ones, dt=dt, p_x0=p_x0_cache)
+          x_accum = x_next
+        assert self.mask_index not in x_accum
     if profile_throughput:
       torch.cuda.synchronize()
     end = time.perf_counter()
@@ -269,8 +305,58 @@ class EsoLM(MDLM):
     sort_idx = (masked + offsets).argsort(descending=False)
     return sort_idx
 
+  def _any_order_ar_loss(self, x0):
+    # x0 has no mask, so sort_idx would be completely random
+    offsets = torch.rand(1, self.num_tokens, device='cuda')
+    sort_idx = offsets.argsort(descending=False)
+    num_diffusion = np.random.binomial(
+      self.num_tokens, self.alpha_0)
+    sort_idx[:, num_diffusion:] = (
+      sort_idx[:, num_diffusion:].sort().values)
+    sort_idx = sort_idx.expand(x0.shape[0], self.num_tokens)
+    x0 = torch.gather(x0, dim=1, index=sort_idx)
+    z0 = self.q_xt(x0, 0)
+    # our model is time invariant, so whatever t to pass
+    dummy_t0 = torch.zeros(1, z0.shape[0], dtype=self.dtype,
+                           device=self.device)
+    output = self.forward(
+      z0, dummy_t0, sort_idx, x0=x0)
+    output[:, :, self.mask_index] = self.neg_infinity
+    output = output.log_softmax(-1)
+    logp_per_token = output.gather(
+      -1, x0[:, :, None])[:, :, 0]
+    logp_per_seq = logp_per_token.sum(dim=1)
+    return logp_per_seq
+
+  def _importance_weighted_loss(self, x0):
+    batch_size = x0.shape[0]
+    num_orders = self.config.eval.num_iw_orders
+    num_orders_torch = torch.tensor(
+      [num_orders], device='cuda')
+    logp_per_seq_per_order = torch.zeros(
+      (batch_size, num_orders), device='cuda')
+    for i in range(num_orders):
+      logp_per_seq_one_order = self._any_order_ar_loss(x0)
+      assert logp_per_seq_one_order.shape[0] == batch_size
+      logp_per_seq_per_order[:, i] = logp_per_seq_one_order
+    logp_per_seq = (
+      torch.log(1 / num_orders_torch) + 
+      torch.logsumexp(logp_per_seq_per_order, dim=1))
+    loss = - logp_per_seq.sum()  # as total nll
+    num_tokens = batch_size * self.num_tokens
+    loss_per_token = loss / num_tokens
+
+    return trainer_base.Loss(
+        loss=loss_per_token,
+        nlls=loss_per_token * num_tokens,
+        reconstruction_loss=0,
+        num_tokens=num_tokens)
+
   def _loss(self, x0, valid_tokens, 
             current_accumulation_step=None, train_mode=False):
+    if self.config.eval.num_iw_orders > 0:
+      return self._importance_weighted_loss(x0)
+
     batch_size = x0.shape[0]
     # batch size used for diffusion loss
     split_batch = int(
@@ -433,16 +519,37 @@ class EsoLM(MDLM):
     if num_steps is None:
       num_steps = self.config.sampling.steps
 
-    unmask_k_tokens = self._tokens_unmasked_per_step(num_steps)
-    num_diffusion_tokens = sum(unmask_k_tokens)
-    
-    # for tokens to be generated by diffusion, shuffle
-    # for tokens to be generated by sequential, don't shuffle
-    sort_idx = torch.rand(
-      num_samples, self.num_tokens).argsort(
-        descending=False).to(self.device)
-    sort_idx[:, num_diffusion_tokens:] = (
-      sort_idx[:, num_diffusion_tokens:].sort().values)
+    if self.config.sampling.subcontext_len == 0:
+      unmask_k_tokens = self._tokens_unmasked_per_step(num_steps)
+      num_diffusion_tokens = sum(unmask_k_tokens)
+      # for tokens to be generated by diffusion, shuffle
+      # for tokens to be generated by sequential, don't shuffle
+      sort_idx = torch.rand(
+        num_samples, self.num_tokens).argsort(
+          descending=False).to(self.device)
+      sort_idx[:, num_diffusion_tokens:] = (
+        sort_idx[:, num_diffusion_tokens:].sort().values)
+    else:
+      # subcontext len is the number of blocks
+      subcontext_len = self.config.sampling.subcontext_len
+      block_size = self.num_tokens // subcontext_len
+      unmask_k_tokens = [block_size] * subcontext_len
+      sort_idx = torch.arange(self.num_tokens, device='cuda')
+      sort_idx = sort_idx.view(
+        block_size, subcontext_len).t()
+      if self.config.sampling.subcontext_shuffle:
+        n_rows, n_cols = sort_idx.shape
+        row_perm = torch.stack([torch.randperm(n_cols) for _ in range(n_rows)])
+        row_perm = row_perm.to('cuda')
+        sort_idx = torch.gather(sort_idx, 1, row_perm)
+        perm = torch.randperm(subcontext_len)
+        sort_idx = sort_idx[perm]
+      sort_idx = sort_idx.flatten()
+      num_diffusion_tokens = int(self.num_tokens * self.alpha_0)
+      unmask_k_tokens = [block_size] * int(subcontext_len * self.alpha_0)
+      sort_idx[num_diffusion_tokens:] = (
+        sort_idx[num_diffusion_tokens:].sort().values)
+      sort_idx = sort_idx[None].expand(num_samples, -1)
 
     x = self.prior_sample(num_samples, self.num_tokens)
     x = torch.gather(x, dim=1, index=sort_idx)

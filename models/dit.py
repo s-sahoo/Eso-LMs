@@ -155,16 +155,6 @@ def _get_seq_mask_prefix_lm(seq_len, cutoffs):
     B=None, H=None, Q_LEN=seq_len*2, KV_LEN=seq_len*2)
 
 
-flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='reduce-overhead')
-# flex_attention_compiled = torch.compile(flex_attention, dynamic=False, fullgraph=True, mode='max-autotune-no-cudagraphs')
-# flex_attention_compiled = torch.compile(flex_attention)
-# flex_attention_compiled = torch.compile(flex_attention, dynamic=True)
-
-
-def fused_flex_attention(q, k, v, mask=None):
-  return flex_attention_compiled(q, k, v, block_mask=mask)
-
-
 def bias_dropout_add_scale(
     x: torch.Tensor,
     bias: typing.Optional[torch.Tensor],
@@ -321,11 +311,25 @@ def split_and_apply_rotary_pos_emb_batch(qkv, rotary_cos_sin):
   return q, k, v
 
 
-def flex_attention_multi_headed(q, k, v, mask):
+def fused_flex_attention(q, k, v, mask, dynamic_shape):
+  if dynamic_shape:
+    flex_attention_compiled = torch.compile(
+      flex_attention, dynamic=True)
+  else:
+    flex_attention_compiled = torch.compile(
+      flex_attention, dynamic=False, 
+      fullgraph=True, mode='reduce-overhead')
+  return flex_attention_compiled(q, k, v, block_mask=mask)
+
+
+def flex_attention_multi_headed(q, k, v, mask, 
+                                dynamic_shape):
+  # if mask is None, then it is bidirectional attention
   q = q.transpose(1, 2).contiguous()
   k = k.transpose(1, 2).contiguous()
   v = v.transpose(1, 2).contiguous()
-  attention_output = fused_flex_attention(q, k, v, mask=mask)
+  attention_output = fused_flex_attention(
+    q, k, v, mask=mask, dynamic_shape=dynamic_shape)
   attention_output = attention_output.transpose(1, 2).contiguous()
   return einops.rearrange(attention_output, 'b s h d -> b s (h d)')
 
@@ -420,7 +424,9 @@ class LabelEmbedder(nn.Module):
 #################################################################################
 
 class DDiTBlockCausal(nn.Module):
-  def __init__(self, dim, n_heads, num_tokens, mlp_ratio=4, dropout=0.1):
+  def __init__(self, dim, n_heads, num_tokens, 
+               mlp_ratio=4, dropout=0.1, 
+               dynamic_shape=False):
     super().__init__()
     self.n_heads = n_heads
     self.num_tokens = num_tokens
@@ -438,6 +444,8 @@ class DDiTBlockCausal(nn.Module):
       nn.Linear(mlp_ratio * dim, dim, bias=True))
     self.dropout2 = nn.Dropout(dropout)
     self.dropout = dropout
+
+    self.dynamic_shape = dynamic_shape
 
   def _get_bias_dropout_scale(self):
     if self.training:
@@ -516,7 +524,8 @@ class DDiTBlockCausal(nn.Module):
       # recreate the mask every time (cheap) to fit different input length
       # different input length can happen during generation
       attn_mask = _get_causal_mask(x.shape[1])
-      x = flex_attention_multi_headed(q, k, v, attn_mask)
+      x = flex_attention_multi_headed(
+        q, k, v, attn_mask, self.dynamic_shape)
 
     scale = torch.ones(1, device=x.device, dtype=x.dtype)
     x = bias_dropout_scale_fn(
@@ -531,7 +540,7 @@ class DDiTBlockCausal(nn.Module):
 class DDiTBlock(nn.Module):
   def __init__(self, dim, n_heads, adaLN, num_tokens,
                cond_dim=None, mlp_ratio=4,
-               dropout=0.1):
+               dropout=0.1, dynamic_shape=False):
     super().__init__()
     self.n_heads = n_heads
     self.dim = dim
@@ -556,6 +565,7 @@ class DDiTBlock(nn.Module):
       self.adaLN_modulation.weight.data.zero_()
       self.adaLN_modulation.bias.data.zero_()
 
+    self.dynamic_shape = dynamic_shape
     self.neg_infinity = -1000000.0
 
   def _get_bias_dropout_scale(self):
@@ -684,7 +694,8 @@ class DDiTBlock(nn.Module):
         q, k, v = split_and_apply_rotary_pos_emb_batch(qkv, rotary_cos_sin)
       else:
         q, k, v = split_and_apply_rotary_pos_emb(qkv, rotary_cos_sin)
-      x = flex_attention_multi_headed(q, k, v, attn_mask)
+      x = flex_attention_multi_headed(
+        q, k, v, attn_mask, self.dynamic_shape)
 
     if self.adaLN:
       x = bias_dropout_scale_fn(self.attn_out(x),
@@ -771,7 +782,8 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
           dim=dim,
           n_heads=config.model.n_heads,
           num_tokens=config.model.length,
-          dropout=config.model.dropout)
+          dropout=config.model.dropout,
+          dynamic_shape=config.attn.dynamic_shape)
       else:
         block = DDiTBlock(
           dim=dim,
@@ -779,7 +791,8 @@ class DiT(nn.Module, huggingface_hub.PyTorchModelHubMixin):
           cond_dim=cond_dim,
           adaLN=self.adaLN,
           num_tokens=config.model.length,
-          dropout=config.model.dropout)
+          dropout=config.model.dropout,
+          dynamic_shape=config.attn.dynamic_shape)
       blocks.append(block)
     self.blocks = nn.ModuleList(blocks)
 

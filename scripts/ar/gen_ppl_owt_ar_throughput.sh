@@ -14,7 +14,7 @@
 nvidia-smi
 nvcc --version
 
-checkpoint_path="/mnt/weka/home/zhihan.yang/checkpoints/owt-ar-323034/checkpoints/14-250000.ckpt"
+CKPT_PATH=${HOME}/checkpoints/owt-ar-323034/checkpoints/14-250000.ckpt
 
 export HYDRA_FULL_ERROR=1
 
@@ -24,9 +24,10 @@ srun python -u -m main \
   model.length=1024 \
   model=small \
   algo=ar \
-  eval.checkpoint_path=$checkpoint_path \
+  eval.checkpoint_path=$CKPT_PATH \
   sampling.kv_cache=True \
   sampling.num_sample_batches=6 \
   sampling.p_nucleus=0.9 \
   sampling.profile_throughput=True \
+  eval.generated_samples_path=${HOME}/Eso-LMs/log/throughput/ar/samples.json \
   +wandb.offline=true

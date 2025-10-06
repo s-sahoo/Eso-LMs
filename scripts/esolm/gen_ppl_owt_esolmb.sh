@@ -21,6 +21,8 @@ while [[ "$#" -gt 0 ]]; do
         --profile_throughput) profile_throughput="$2"; shift ;;
         --length) length="$2"; shift ;;  # optional
         --samples_path) samples_path="$2"; shift ;;  # optional
+        --subcontext_len) subcontext_len="$2"; shift ;;  # optional
+        --subcontext_shuffle) subcontext_shuffle=$2$; shift ;;  # optional
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -33,6 +35,7 @@ echo $num_batches
 echo $ckpt_path
 echo $profile_throughput
 echo $samples_path
+echo $subcontext_len
 
 nvidia-smi
 nvcc --version
@@ -56,5 +59,7 @@ srun python -u -m main \
   sampling.steps=$T \
   sampling.p_nucleus=0.9 \
   sampling.profile_throughput=$profile_throughput \
+  ${subcontext_len:+sampling.subcontext_len="$subcontext_len"} \
+  ${subcontext_shuffle:+sampling.subcontext_shuffle="$subcontext_shuffle"} \
   ${samples_path:+eval.generated_samples_path="$samples_path"} \
   +wandb.offline=true

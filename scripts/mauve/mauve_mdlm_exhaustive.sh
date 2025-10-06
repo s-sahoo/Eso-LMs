@@ -4,7 +4,7 @@ export BASE_LOG_DIR="/mnt/weka/home/zhihan.yang/Eso-LMs/log"
 
 echo $BASE_LOG_DIR
 
-Ts=(8 16 32 64 128 256 1024 4096)
+Ts=(8 16 32 48 64 128 256 1024 4096)
 
 for T in "${Ts[@]}"; do
 

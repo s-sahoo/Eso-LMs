@@ -4,7 +4,6 @@
 #SBATCH --output=slurm/%j_%x.out
 #SBATCH --error=slurm/%j_%x.err
 #SBATCH -N 1
-#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=8
 #SBATCH --gres=gpu:8
 #SBATCH --open-mode=append
@@ -16,19 +15,18 @@ nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=lm1b-esolmb-alpha0-0d5-${SLURM_JOB_ID}
+RUN_NAME=lm1b-esolmb-alpha0-0-${SLURM_JOB_ID}
 CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
-  loader.batch_size=32 \
-  loader.eval_batch_size=32 \
-  trainer.num_nodes=2 \
+  loader.batch_size=64 \
+  loader.eval_batch_size=64 \
   model=small \
   data=lm1b-wrap \
   wandb.name=${RUN_NAME} \
   algo=esolm \
-  algo.alpha_0=0.5 \
-  algo.batch_split=0.5 \
+  algo.alpha_0=0 \
+  algo.batch_split=0 \
   algo.diffusion_shuffle=True \
   algo.diffusion_attn_mode=causal \
   algo.sequential_shuffle=True \
