@@ -2,6 +2,7 @@
 scripts_local/
 slurm/
 log/
+custom_mauve/
 
 .hf_cache
 test/

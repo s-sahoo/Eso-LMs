@@ -11,33 +11,23 @@
 # To enable preemption re-loading, set `hydra.run.dir` or 
 # `checkpointing.save_dir` explicitly.
 
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --n_blocks) n_blocks="$2"; shift ;;
-        *) echo "Unknown parameter: $1"; exit 1 ;;
-    esac
-    shift
-done
-
-echo $n_blocks
-
 nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-ar-${n_blocks}-${SLURM_JOB_ID}
+RUN_NAME=owt-ar-prepend-bos-${SLURM_JOB_ID}
 CKPT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
   loader.batch_size=64 \
   loader.eval_batch_size=64 \
   model=small \
-  model.n_blocks=$n_blocks \
   data=openwebtext-split \
   +data.insert_train_special=False \
   +data.insert_valid_special=False \
   wandb.name=${RUN_NAME} \
   algo=ar \
+  algo.prepend_token=bos \
   model.length=1024 \
   eval.generate_samples=False \
   eval.compute_generative_perplexity=False \

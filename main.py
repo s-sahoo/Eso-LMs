@@ -28,6 +28,9 @@ def _load_from_checkpoint(diffusion_model, config, tokenizer):
     return diffusion_model(
       config, tokenizer=tokenizer).to('cuda')
   
+  # model = diffusion_model(config, tokenizer=tokenizer).to('cuda')
+  # print('finished loading model')
+  # return model
   return diffusion_model.load_from_checkpoint(
     config.eval.checkpoint_path,
     tokenizer=tokenizer,
@@ -99,6 +102,9 @@ def _generate_samples(diffusion_model, config, logger,
   stride_length = config.sampling.stride_length
   num_strides = config.sampling.num_strides
   all_samples = []
+  nfes = []
+  durations = []
+  profile_throughput = config.sampling.profile_throughput
   for _ in range(config.sampling.num_sample_batches):
     if config.sampling.semi_ar:
       _, intermediate_samples, _ = model.restore_model_and_semi_ar_sample(
@@ -112,25 +118,38 @@ def _generate_samples(diffusion_model, config, logger,
       # and diffusion.compute_generative_perplexity() discards
       # any text after the first EOS token.
     else:
-      samples = model.restore_model_and_sample(
-        num_steps=config.sampling.steps)
-      model.metrics.record_entropy(samples)
-      text_samples = model.tokenizer.batch_decode(samples)
-      model.metrics.record_generative_perplexity(
-        text_samples, config.model.length, model.device)
-      all_samples.extend(list(text_samples))
+      samples, nfe, duration = model.restore_model_and_sample(
+        num_steps=config.sampling.steps, 
+        sample_eval=True)  # delete ema after first use to save memory
+      if not profile_throughput:
+        model.metrics.record_entropy(samples)
+        text_samples = model.tokenizer.batch_decode(samples)
+        model.metrics.record_generative_perplexity(
+          text_samples, config.model.length, 
+          retokenize=True, device=model.device)
+        all_samples.extend(list(text_samples))
+      nfes.append(nfe)
+      durations.append(duration)
   generative_ppl = 0.
   entropy = 0.
-  if not config.sampling.semi_ar:
+  if not config.sampling.semi_ar and not profile_throughput:
     generative_ppl = model.metrics.gen_ppl.compute().item()
     entropy = model.metrics.sample_entropy.compute().item()
     print('Generative perplexity:', generative_ppl)
     print('Sample entropy:', entropy)
   samples_path = config.eval.generated_samples_path
-  with fsspec.open(samples_path, 'w', encoding='utf-8') as f:
+  with fsspec.open(samples_path, 'w', encoding='utf-8') as f:      
     data = {'generative_ppl': generative_ppl,
             'entropy': entropy,
-            'generated_seqs': all_samples}
+            'nfe_mean': torch.mean(torch.tensor(nfes)).item(),
+            'nfe_std': torch.std(torch.tensor(nfes)).item(),
+            'duration_mean': torch.mean(torch.tensor(durations)).item(),
+            'duration_std': torch.std(torch.tensor(durations)).item()}
+    if len(durations) > 1:
+      data['duration_accurate_mean'] = torch.mean(torch.tensor(durations[1:])).item()
+      data['duration_accurate_std'] = torch.std(torch.tensor(durations[1:])).item()
+    if not profile_throughput:
+      data['generated_seqs'] = all_samples
     json.dump(data, f, ensure_ascii=False, indent=4)
   print('Samples saved at:', samples_path)
 

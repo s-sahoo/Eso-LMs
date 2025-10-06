@@ -93,7 +93,7 @@ sbatch scripts/esolm/gen_ppl_owt_esolmb.sh \
   --ckpt_path folder/esolmb-alpha0-1-250k.ckpt
 ```
 
-By default, this bash script occupies a single GPU.
+By default, this bash script occupies a single GPU and uses a fixed seed.
 
 The value of `alpha_0` used for sampling can be different from the one used for training.
 

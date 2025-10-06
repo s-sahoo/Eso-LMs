@@ -1,34 +1,59 @@
 #!/bin/bash
-#SBATCH -J sample_mdlm                # Job name
-#SBATCH -o watch_folder/%x_%j.out     # log file (out & err)
-#SBATCH -N 1                          # Total number of nodes requested
-#SBATCH --get-user-env                # retrieve the users login environment
-#SBATCH --mem=64000                   # server memory requested (per node)
-#SBATCH -t 960:00:00                  # Time limit (hh:mm:ss)
-#SBATCH --partition=kuleshov          # Request partition
-#SBATCH --constraint="[a5000|a6000|a100|3090]"
+#SBATCH -J sample_owt_mdlm
+#SBATCH --partition=main
+#SBATCH --output=slurm/%j_%x.out
+#SBATCH --error=slurm/%j_%x.err
+#SBATCH -N 1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:1                  # Type/number of GPUs needed
-#SBATCH --open-mode=append            # Do not overwrite logs
-#SBATCH --requeue                     # Requeue upon preemption
+#SBATCH --gres=gpu:1
+#SBATCH --open-mode=append
+
+# To enable preemption re-loading, set `hydra.run.dir` or 
+# `checkpointing.save_dir` explicitly.
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --T) T="$2"; shift ;;
+        --batch_size) batch_size="$2"; shift ;;
+        --num_batches) num_batches="$2"; shift ;;
+        --ckpt_path) ckpt_path="$2"; shift ;;
+        --profile_throughput) profile_throughput="$2"; shift ;;
+        --length) length="$2"; shift ;;  # optional
+        --samples_path) samples_path="$2"; shift ;;  # optional
+        --seed) seed="$2"; shift ;;  # optional
+        --use_ar_order) use_ar_order="$2"; shift ;;  # optional
+        --use_block_ar_order) use_block_ar_order="$2"; shift ;;  # optional
+        *) echo "Unknown parameter: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+echo $T
+echo $batch_size
+echo $num_batches
+echo $ckpt_path
+echo $profile_throughput
+echo $samples_path
+echo $use_ar_order
 
 nvidia-smi
 nvcc --version
-
-# checkpoint_path=/share/kuleshov/ssahoo/textdiffusion/mdlm.ckpt
-checkpoint_path=/share/kuleshov/ssahoo/textdiffusion/text-diff-clean-s-owt-no-t-mQ4fQG-param-subs_data-openwebtext-split/checkpoints/15-250000.ckpt
 
 export HYDRA_FULL_ERROR=1
 
 srun python -u -m main \
   mode=sample_eval \
-  loader.batch_size=1 \
-  loader.eval_batch_size=1 \
-  data=openwebtext-split \
+  loader.eval_batch_size=$batch_size \
   model=small \
+  ${length:+model.length="$length"} \
   algo=mdlm \
-  sampling.predictor=ancestral_cache \
-  eval.checkpoint_path=${checkpoint_path} \
-  sampling.num_sample_batches=8 \
-  sampling.p_nucleus=1.0 \
+  eval.checkpoint_path=$ckpt_path \
+  sampling.num_sample_batches=$num_batches \
+  sampling.p_nucleus=0.9 \
+  sampling.steps=$T \
+  sampling.profile_throughput=$profile_throughput \
+  ${samples_path:+eval.generated_samples_path="$samples_path"} \
+  ${seed:+seed=$seed} \
+  ${use_ar_order:+sampling.use_ar_order=$use_ar_order} \
+  ${use_block_ar_order:+sampling.use_block_ar_order=$use_block_ar_order} \
   +wandb.offline=true

@@ -108,10 +108,13 @@ class TrainerBase(L.LightningModule):
     # different randomness for different ranks
     # does not affect dataloading seed
     del stage
-    new_seed = self.config.seed + self.trainer.global_rank 
-    torch.manual_seed(new_seed)
-    np.random.seed(new_seed)
-    random.seed(new_seed)
+    if self.config.data.train != 'lm1b':
+      new_seed = self.config.seed + self.trainer.global_rank 
+      torch.manual_seed(new_seed)
+      np.random.seed(new_seed)
+      random.seed(new_seed)
+    else:
+      print('not using rankwise randomness')
 
   def _validate_configuration(self):
     assert self.config.algo.backbone in {'dit', 'hf_dit', 
@@ -137,10 +140,12 @@ class TrainerBase(L.LightningModule):
     return itertools.chain(self.backbone.parameters(),
                            self.noise.parameters())
 
-  def _eval_mode(self):
+  def _eval_mode(self, sample_eval=False):
     if self.ema:
       self.ema.store(self._get_parameters())
       self.ema.copy_to(self._get_parameters())
+      if sample_eval:
+        self.ema = None  # free up memory
     self.backbone.eval()
     self.noise.eval()
 
@@ -359,16 +364,17 @@ class TrainerBase(L.LightningModule):
   def generate_samples(self, num_samples, num_steps, eps):
     raise NotImplementedError
 
-  def restore_model_and_sample(self, num_steps, eps=1e-5):
+  def restore_model_and_sample(self, num_steps, eps=1e-5, sample_eval=False):
     """Generate samples from the model."""
     # Lightning auto-casting is not working in this method for some reason
-    self._eval_mode()
-    samples = self.generate_samples(
+    self._eval_mode(sample_eval)
+    samples, nfe, duration = self.generate_samples(
       num_samples=self.config.loader.eval_batch_size,
       num_steps=num_steps,
       eps=eps)
-    self._train_mode()
-    return samples
+    if not sample_eval:
+      self._train_mode()
+    return samples, nfe, duration
 
   def _process_model_input(self, x0, valid_tokens):
     raise NotImplementedError

@@ -6,3 +6,4 @@ causal_attention: True
 # Irrelevant flags
 T: 0
 subs_masking: False
+prepend_token: none

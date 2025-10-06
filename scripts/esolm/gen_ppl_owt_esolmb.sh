@@ -18,6 +18,11 @@ while [[ "$#" -gt 0 ]]; do
         --batch_size) batch_size="$2"; shift ;;
         --num_batches) num_batches="$2"; shift ;;
         --ckpt_path) ckpt_path="$2"; shift ;;
+        --profile_throughput) profile_throughput="$2"; shift ;;
+        --length) length="$2"; shift ;;  # optional
+        --samples_path) samples_path="$2"; shift ;;  # optional
+        --subcontext_len) subcontext_len="$2"; shift ;;  # optional
+        --subcontext_shuffle) subcontext_shuffle=$2$; shift ;;  # optional
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -28,6 +33,9 @@ echo $T
 echo $batch_size
 echo $num_batches
 echo $ckpt_path
+echo $profile_throughput
+echo $samples_path
+echo $subcontext_len
 
 nvidia-smi
 nvcc --version
@@ -37,8 +45,8 @@ export HYDRA_FULL_ERROR=1
 srun python -u -m main \
   mode=sample_eval \
   loader.eval_batch_size=$batch_size \
-  model.length=1024 \
   model=small \
+  ${length:+model.length="$length"} \
   algo=esolm \
   algo.alpha_0=$alpha_0 \
   algo.diffusion_attn_mode=causal \
@@ -50,4 +58,8 @@ srun python -u -m main \
   sampling.num_sample_batches=$num_batches \
   sampling.steps=$T \
   sampling.p_nucleus=0.9 \
+  sampling.profile_throughput=$profile_throughput \
+  ${subcontext_len:+sampling.subcontext_len="$subcontext_len"} \
+  ${subcontext_shuffle:+sampling.subcontext_shuffle="$subcontext_shuffle"} \
+  ${samples_path:+eval.generated_samples_path="$samples_path"} \
   +wandb.offline=true

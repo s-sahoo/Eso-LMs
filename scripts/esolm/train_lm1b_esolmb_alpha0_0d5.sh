@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH -J train_owt_ar
+#SBATCH -J train_lm1b_esolm
 #SBATCH --partition=main
 #SBATCH --output=slurm/%j_%x.out
 #SBATCH --error=slurm/%j_%x.err
 #SBATCH -N 1
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=8
 #SBATCH --gres=gpu:8
 #SBATCH --open-mode=append
@@ -11,34 +12,29 @@
 # To enable preemption re-loading, set `hydra.run.dir` or 
 # `checkpointing.save_dir` explicitly.
 
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --n_blocks) n_blocks="$2"; shift ;;
-        *) echo "Unknown parameter: $1"; exit 1 ;;
-    esac
-    shift
-done
-
-echo $n_blocks
-
 nvidia-smi
 nvcc --version
 
 DATA_DIR=${HOME}/data/esolm
-RUN_NAME=owt-ar-${n_blocks}-${SLURM_JOB_ID}
-CKPT_DIR=${HOME}/checkpoints/${RUN_NAME}
+RUN_NAME=lm1b-esolmb-alpha0-0d5-${SLURM_JOB_ID}
+CHECKPOINT_DIR=${HOME}/checkpoints/${RUN_NAME}
 
 srun python -u -m main \
-  loader.batch_size=64 \
-  loader.eval_batch_size=64 \
+  loader.batch_size=32 \
+  loader.eval_batch_size=32 \
+  trainer.num_nodes=2 \
   model=small \
-  model.n_blocks=$n_blocks \
-  data=openwebtext-split \
-  +data.insert_train_special=False \
-  +data.insert_valid_special=False \
+  data=lm1b-wrap \
   wandb.name=${RUN_NAME} \
-  algo=ar \
-  model.length=1024 \
+  algo=esolm \
+  algo.alpha_0=0.5 \
+  algo.batch_split=0.5 \
+  algo.diffusion_shuffle=True \
+  algo.diffusion_attn_mode=causal \
+  algo.sequential_shuffle=True \
+  algo.sequential_attn_mode=causal \
+  algo.loss_type=elbo \
+  model.length=128 \
   eval.generate_samples=False \
   eval.compute_generative_perplexity=False \
   trainer.val_check_interval=10000 \
@@ -46,4 +42,4 @@ srun python -u -m main \
   trainer.log_every_n_steps=1000 \
   trainer.max_steps=1000000 \
   data.cache_dir=${DATA_DIR} \
-  hydra.run.dir=${CKPT_DIR}
+  hydra.run.dir=${CHECKPOINT_DIR}
