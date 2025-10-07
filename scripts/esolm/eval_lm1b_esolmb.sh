@@ -36,10 +36,9 @@ DATA_DIR=${HOME}/data/esolm
 srun python -u -m main \
   mode=ppl_eval \
   loader.eval_batch_size=32 \
-  data=openwebtext-split \
-  +data.insert_valid_special=False \
+  data=lm1b-wrap \
   model=small \
-  model.length=1024 \
+  model.length=128 \
   algo=esolm \
   algo.alpha_0=$alpha_0 \
   algo.batch_split=$batch_split \
