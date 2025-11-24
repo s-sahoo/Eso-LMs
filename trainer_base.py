@@ -108,12 +108,15 @@ class TrainerBase(L.LightningModule):
     # different randomness for different ranks
     # does not affect dataloading seed
     del stage
-    if self.config.data.train != 'lm1b':
+    if (self.config.data.train != 'lm1b' or 
+        self.config.mode == 'ppl_eval'):
       new_seed = self.config.seed + self.trainer.global_rank 
       torch.manual_seed(new_seed)
       np.random.seed(new_seed)
       random.seed(new_seed)
     else:
+      # using rankwise randomness for lm1b-wrap leads to
+      # divergence during training for unknown reasons
       print('not using rankwise randomness')
 
   def _validate_configuration(self):
