@@ -24,10 +24,9 @@ torch._C._jit_set_profiling_executor(False)
 torch._C._jit_override_can_fuse_on_cpu(True)
 torch._C._jit_override_can_fuse_on_gpu(True)
 
-import time
 
-
-@lru_cache
+# must disable for B200
+# @lru_cache 
 def _causal_mask(b, h, q_idx, kv_idx):
   causal = q_idx >= kv_idx
   return causal
@@ -317,8 +316,9 @@ def fused_flex_attention(q, k, v, mask, dynamic_shape):
       flex_attention, dynamic=True)
   else:
     flex_attention_compiled = torch.compile(
-      flex_attention, dynamic=False, 
-      fullgraph=True, mode='reduce-overhead')
+      flex_attention)
+      # dynamic=False, 
+      # fullgraph=True, mode='reduce-overhead')
   return flex_attention_compiled(q, k, v, block_mask=mask)
 
 

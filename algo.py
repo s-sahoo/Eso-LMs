@@ -289,17 +289,25 @@ class EsoLM(MDLM):
     self.noise = trainer_base.LogLinear(self.alpha_0)
 
   def _sort_indices(
-    self, indices, shuffle, keep_masks_unshuffled=False):
+    self, indices, shuffle, keep_masks_unshuffled=False,
+    keep_clean_unshuffled=False):
     masked = (indices == self.mask_index)
     if shuffle:
       offsets = torch.rand(
         indices.shape).to(indices.device) * 0.9
       if keep_masks_unshuffled:
+        # EsoLM Sequential Phase
         # induce left-to-right order within masked tokens
-        # only for sequential part
         offsets[masked] = torch.linspace(
           0, 1, torch.sum(masked)).to(indices.device)
+      if keep_clean_unshuffled:
+        assert self.alpha_0 == 1
+        # EsoLM (A2) Diffusion Phase
+        # induce left-to-right order within clean tokens
+        offsets[~masked] = torch.linspace(
+          0, 0.9, torch.sum(~masked)).to(indices.device)
     else:
+      # Esolm (A) Sequential Phase
       offsets = torch.linspace(
         0, 0.9, indices.shape[1]).to(indices.device)
     sort_idx = (masked + offsets).argsort(descending=False)
@@ -458,7 +466,9 @@ class EsoLM(MDLM):
     xt = self.q_xt(x0, alpha_t)
     # sort inputs and targets before passing to the model
     sort_idx = self._sort_indices(
-      xt, shuffle=self.config.algo.diffusion_shuffle)
+      xt, shuffle=self.config.algo.diffusion_shuffle,
+      keep_clean_unshuffled=self.config.algo.keep_clean_unshuffled,
+      keep_masks_unshuffled=self.config.algo.keep_masks_unshuffled)
     xt = torch.gather(xt, dim=1, index=sort_idx)
     x0 = torch.gather(x0, dim=1, index=sort_idx)
     # pass sort_idx into the model to also sort pos. embeddings

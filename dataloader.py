@@ -213,6 +213,64 @@ def generate_synthetic_dataset(train_dataset_size,
   }
 
 
+class SudokuTokenizer(
+  transformers.PreTrainedTokenizer):
+  
+  def __init__(
+    self,
+    bos_token="[BOS]",
+    eos_token="[EOS]",
+    sep_token=None,
+    cls_token=None,
+    pad_token=None,
+    mask_token="0",
+    unk_token=None,
+    **kwargs):
+    
+    self.tokens = []
+    
+    for i in range(10):  # 0, 1, ..., 9 (0 for mask)
+      self.tokens.append(str(i))
+    
+    self._vocab_str_to_int = {
+      '[BOS]': 10,
+      '[EOS]': 11,
+      ** {ch: i for i, ch in enumerate(self.tokens)}}
+    
+    self._vocab_int_to_str = {
+      v: k for k, v in self._vocab_str_to_int.items()}
+    
+    super().__init__(
+      bos_token=bos_token,
+      eos_token=eos_token,
+      sep_token=sep_token,
+      cls_token=cls_token,
+      pad_token=pad_token,
+      mask_token=mask_token,
+      unk_token=unk_token,
+      **kwargs)
+
+  @property
+  def vocab_size(self) -> int:
+    return len(self._vocab_str_to_int)
+
+  def _tokenize(self, text: str, **kwargs) -> typing.List[str]:
+    return list(text.lower())
+
+  def _convert_token_to_id(self, token: str) -> int:
+    return self._vocab_str_to_int.get(
+      token, self._vocab_str_to_int['[UNK]'])
+
+  def _convert_id_to_token(self, index: int) -> str:
+    return self._vocab_int_to_str[index]
+
+  def convert_tokens_to_string(self, tokens):
+    return ''.join(tokens)
+
+  def get_vocab(self) -> typing.Dict[str, int]:
+    return self._vocab_str_to_int
+
+
 class Text8Tokenizer(transformers.PreTrainedTokenizer):
   def __init__(
     self,
@@ -528,6 +586,12 @@ def get_dataset(dataset_name,
       seq_len=32,
       vocab_size=256,
     )
+  elif dataset_name == 'sudoku':
+    dataset = datasets.load_dataset(
+      'zhihanyang/sudoku',
+      cache_dir=cache_dir,
+      streaming=streaming,
+      revision=revision)
   else:
     dataset = datasets.load_dataset(
       dataset_name,
@@ -543,6 +607,9 @@ def get_dataset(dataset_name,
     data = dataset[mode]
     if dataset_name == 'synthetic':
       # already tokenized, no further actions required
+      return data
+    elif dataset_name == 'sudoku':
+      data = data.with_format('torch')
       return data
 
   if dataset_name.startswith('wikitext'):
@@ -657,6 +724,8 @@ def get_tokenizer(config):
       from_pretrained('bert-base-uncased')
   elif config.data.tokenizer_name_or_path == 'synthetic':
     tokenizer = SyntheticTokenizer(vocab_size=256)
+  elif config.data.tokenizer_name_or_path == 'sudoku':
+    tokenizer = SudokuTokenizer()
   else:
     tokenizer = transformers.AutoTokenizer.from_pretrained(
       config.data.tokenizer_name_or_path)

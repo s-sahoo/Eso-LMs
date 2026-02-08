@@ -9,6 +9,8 @@ alpha_0: 0.0
 batch_split: 0.0
 diffusion_shuffle: False 
 diffusion_attn_mode: bidirectional
+keep_clean_unshuffled: False
+keep_masks_unshuffled: False
 sequential_shuffle: False
 sequential_attn_mode: causal
 loss_type: elbo
