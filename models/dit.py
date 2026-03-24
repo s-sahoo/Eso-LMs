@@ -32,20 +32,21 @@ def _causal_mask(b, h, q_idx, kv_idx):
   return causal
 
 
-@lru_cache
+# @lru_cache
 def _get_causal_mask(seq_len):
   return create_block_mask(
     _causal_mask,
     B=None, H=None, Q_LEN=seq_len, KV_LEN=seq_len)
 
 
-@lru_cache
+# must disable for B200
+# @lru_cache
 def _bidirectional_mask(b, h, q_idx, kv_idx):
   bidirectional = q_idx == q_idx
   return bidirectional
 
 
-@lru_cache
+# @lru_cache
 def _get_bidirectional_mask(seq_len):
   return create_block_mask(
     _bidirectional_mask,
