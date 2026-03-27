@@ -16,6 +16,7 @@ while [[ "$#" -gt 0 ]]; do
         --alpha_0) alpha_0="$2"; shift ;;
         --batch_split) batch_split="$2"; shift ;;
         --num_iw_orders) num_iw_orders="$2"; shift ;;  # optional
+        --num_imdce_orders) num_imdce_orders="$2"; shift ;;  # optional
         --ckpt_path) ckpt_path="$2"; shift ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
@@ -49,6 +50,7 @@ srun python -u -m main \
   algo.sequential_shuffle=True \
   eval.checkpoint_path=$ckpt_path \
   ${num_iw_orders:+eval.num_iw_orders="$num_iw_orders"} \
+  ${num_imdce_orders:+eval.num_imdce_orders="$num_imdce_orders"} \
   sampling.num_sample_batches=0 \
   data.cache_dir=${DATA_DIR} \
   +wandb.offline=true

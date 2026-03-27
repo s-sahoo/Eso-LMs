@@ -305,9 +305,14 @@ class EsoLM(MDLM):
     sort_idx = (masked + offsets).argsort(descending=False)
     return sort_idx
 
-  def _any_order_ar_loss(self, x0):
-    # x0 has no mask, so sort_idx would be completely random
+  def _any_order_ar_loss(self, x0, valid_tokens=None):
+    # x0 has no mask, so sort_idx would be completely random.
+    # valid_tokens: [1, L] bool/float mask; pad positions get offset >= 1
+    # so they always sort after real tokens, and their logp is excluded.
     offsets = torch.rand(1, self.num_tokens, device='cuda')
+    if valid_tokens is not None:
+      pad_mask = (valid_tokens == 0)  # [1, L]
+      offsets[pad_mask] += 1.0  # push pad tokens past all real tokens
     sort_idx = offsets.argsort(descending=False)
     num_diffusion = np.random.binomial(
       self.num_tokens, self.alpha_0)
@@ -325,10 +330,16 @@ class EsoLM(MDLM):
     output = output.log_softmax(-1)
     logp_per_token = output.gather(
       -1, x0[:, :, None])[:, :, 0]
+    if valid_tokens is not None:
+      # reorder valid_tokens to match the shuffled sequence
+      valid_reordered = torch.gather(
+        valid_tokens.expand(x0.shape[0], self.num_tokens),
+        dim=1, index=sort_idx)
+      logp_per_token = logp_per_token * valid_reordered
     logp_per_seq = logp_per_token.sum(dim=1)
     return logp_per_seq
 
-  def _importance_weighted_loss(self, x0):
+  def _importance_weighted_loss(self, x0, valid_tokens=None):
     batch_size = x0.shape[0]
     num_orders = self.config.eval.num_iw_orders
     num_orders_torch = torch.tensor(
@@ -336,11 +347,12 @@ class EsoLM(MDLM):
     logp_per_seq_per_order = torch.zeros(
       (batch_size, num_orders), device='cuda')
     for i in range(num_orders):
-      logp_per_seq_one_order = self._any_order_ar_loss(x0)
+      logp_per_seq_one_order = self._any_order_ar_loss(
+        x0, valid_tokens=valid_tokens)
       assert logp_per_seq_one_order.shape[0] == batch_size
       logp_per_seq_per_order[:, i] = logp_per_seq_one_order
     logp_per_seq = (
-      torch.log(1 / num_orders_torch) + 
+      torch.log(1 / num_orders_torch) +
       torch.logsumexp(logp_per_seq_per_order, dim=1))
     loss = - logp_per_seq.sum()  # as total nll
     num_tokens = batch_size * self.num_tokens
@@ -352,10 +364,120 @@ class EsoLM(MDLM):
         reconstruction_loss=0,
         num_tokens=num_tokens)
 
+  def _importance_weighted_loss_parallel(self, x0, valid_tokens=None):
+    # Assumes x0 has batch_size=1; parallelizes num_orders over the batch dim.
+    # valid_tokens: [1, L] float mask (0 = pad); pad positions are pushed to
+    # the end of every ordering and excluded from the logp sum.
+    assert x0.shape[0] == 1
+    num_orders = self.config.eval.num_iw_orders
+    L = self.num_tokens
+
+    # Sample num_orders independent random orderings.
+    # Pad positions get offset += 1 so they always sort after real tokens.
+    offsets = torch.rand(num_orders, L, device='cuda')        # [K, L]
+    if valid_tokens is not None:
+      offsets += (1.0 - valid_tokens.float())                 # broadcast [1,L]
+    sort_idx = offsets.argsort(descending=False)              # [K, L]
+
+    # For each order, keep first num_diffusion positions random;
+    # sort the remaining (AR) positions into ascending token-index order.
+    num_diffusion = np.random.binomial(L, self.alpha_0, size=num_orders)
+    for i in range(num_orders):
+      nd = num_diffusion[i]
+      if nd < L:
+        sort_idx[i, nd:] = sort_idx[i, nd:].sort().values
+
+    print('old')
+    # offsets = torch.rand(num_orders, L, device='cuda')        # [K, L]
+    # sort_idx2 = offsets.argsort(descending=False)  
+
+    # # Reorder x0 according to each ordering: [K, L]
+    x0_expanded = x0.expand(num_orders, L)
+    x0_reordered = torch.gather(x0_expanded, dim=1, index=sort_idx)
+
+    # Single batched forward pass
+    z0 = self.q_xt(x0_reordered, 0)
+    dummy_t0 = torch.zeros(1, num_orders, dtype=self.dtype, device=self.device)
+    output = self.forward(z0, dummy_t0, sort_idx, x0=x0_reordered)
+    output[:, :, self.mask_index] = self.neg_infinity
+    output = output.log_softmax(-1)
+    logp_per_token = output.gather(-1, x0_reordered[:, :, None])[:, :, 0]
+
+    # Zero out pad token contributions (reorder valid_tokens to match shuffle)
+    if valid_tokens is not None:
+      valid_reordered = torch.gather(
+        valid_tokens.float().expand(num_orders, L),
+        dim=1, index=sort_idx)                                # [K, L]
+      logp_per_token = logp_per_token * valid_reordered
+
+    logp_per_order = logp_per_token.sum(dim=1)                # [K]
+
+    # IW estimate: log mean exp
+    num_orders_torch = torch.tensor([num_orders], device='cuda')
+    logp = (torch.log(1 / num_orders_torch)
+            + torch.logsumexp(logp_per_order, dim=0))         # scalar
+
+    loss = -logp
+    loss_per_token = loss / L
+
+    return trainer_base.Loss(
+        loss=loss_per_token,
+        nlls=loss_per_token * L,
+        reconstruction_loss=0,
+        num_tokens=L)
+
+  def _imdce_loss(self, x0):
+    batch_size, seq_len = x0.shape
+    H_L = np.sum(1.0 / np.arange(1, seq_len + 1))
+    print('H_L:', H_L)
+    k_vals = np.arange(seq_len)
+    p_k = 1.0 / ((seq_len - k_vals) * H_L)
+    num_orders = self.config.eval.num_imdce_orders
+    logp_per_seq_accum = torch.zeros(batch_size, 
+                                     device=self.device)
+    for _ in range(num_orders):
+      ks = np.random.choice(k_vals, size=batch_size, p=p_k)
+      keep_mask = torch.zeros(
+        (batch_size, seq_len), device=self.device, 
+        dtype=torch.bool)
+      for b in range(batch_size):
+        indices = torch.randperm(seq_len,
+                                 device=self.device)[:ks[b]]
+        keep_mask[b, indices] = True
+      zt = x0.clone()
+      zt[~keep_mask] = self.mask_index
+      # prepare input and target
+      sort_idx = self._sort_indices(zt, shuffle=True)
+      zt_shuffled = torch.gather(zt, dim=1, index=sort_idx)
+      x0_shuffled = torch.gather(x0, dim=1, index=sort_idx)
+      # count loss for mask positions
+      loss_mask = zt_shuffled == self.mask_index  
+      with torch.no_grad():
+        dummy_t0 = torch.zeros(
+          1, zt.shape[0], dtype=self.dtype,
+          device=self.device)
+        log_x_theta = self.forward(
+          zt_shuffled, dummy_t0, sort_idx)  # log softmax
+        log_x_theta = log_x_theta.gather(
+          -1, x0_shuffled[:, :, None])[:, :, 0]
+        logp_per_seq = (log_x_theta * loss_mask).sum(dim=1)
+        logp_per_seq_accum += logp_per_seq
+    logp_per_seq = (H_L * logp_per_seq_accum) / num_orders
+    loss = - logp_per_seq.sum()
+    num_tokens = batch_size * seq_len
+    loss_per_token = loss / num_tokens
+    return trainer_base.Loss(
+        loss=loss_per_token,
+        nlls=loss_per_token * num_tokens,
+        reconstruction_loss=0,
+        num_tokens=num_tokens)
+
   def _loss(self, x0, valid_tokens, 
             current_accumulation_step=None, train_mode=False):
     if self.config.eval.num_iw_orders > 0:
       return self._importance_weighted_loss(x0)
+    elif self.config.eval.num_imdce_orders > 0:
+      return self._imdce_loss(x0)
 
     batch_size = x0.shape[0]
     # batch size used for diffusion loss

@@ -27,7 +27,6 @@ torch._C._jit_override_can_fuse_on_gpu(True)
 import time
 
 
-@lru_cache
 def _causal_mask(b, h, q_idx, kv_idx):
   causal = q_idx >= kv_idx
   return causal

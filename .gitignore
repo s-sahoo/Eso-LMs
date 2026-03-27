@@ -3,6 +3,7 @@ scripts_local/
 slurm/
 log/
 custom_mauve/
+datasets/
 
 .hf_cache
 test/
