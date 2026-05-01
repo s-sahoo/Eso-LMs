@@ -1,4 +1,4 @@
-# Esoteric Language Models [ICML 2026]
+# [Esoteric Language Models (ICML 2026)](https://arxiv.org/abs/2506.01928)
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/12dWwEsPWaKq2vaTJoRy7ZEClTLGRFmeE?usp=sharing)
 [![deploy](https://img.shields.io/badge/Blog%20%20-8A2BE2)](https://s-sahoo.com/Eso-LMs/)
