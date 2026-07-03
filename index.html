@@ -151,22 +151,15 @@
          <div class="container is-max-desktop">
             <div class="hero-body">
                <div style="text-align: center; margin-bottom:1cm" >
-                  <img src="static/images/Graphical abstract (EsoLM-B + speed).svg" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
+                  <img src="static/images/esolm-abstract.png" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
                </div>
                <h4 class="subtitle has-text-centered">
-                  <u>Left:</u> Efficient generation of an example sequence with our flagship model Eso-LM (B). 
-                  During the <span style="color: rgb(255, 142, 0); font-weight: bold;">Diffusion</span> Phase, 
-                  Eso-LMs denoise one or more, potentially non-neighboring mask tokens 
-                  (<span style="color: rgb(183, 183, 183); font-weight: bold;">M</span>) per step, just like masked diffusion models. 
-                  During the <span style="color: rgb(72, 117, 44); font-weight: bold;">Sequential</span> Phase, 
-                  Eso-LMs denoise the remaining mask tokens one at a time from left to right, just like autoregressive models but conditioned on left and right contexts. 
-                  Eso-LM (B) allows for 
-                  <strong>KV caching in both phases</strong> using 
-                  <strong>a single unified KV cache</strong>: 
-                  <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> bounding boxes enclose 
-                  transformer cells building their KV cache; 
-                  a cell becomes <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> once its KV cache is built. 
-                  The sequences below the transformers depict tokens in their natural order.
+                  <u>Left:</u>  Key features supported by our proposed Eso-LMs versus 
+                     those by relevant baselines: an autoregressive (AR) model,
+                     MDLMs, and BD3-LMs (Block Diffusion). By combining parallel generation over the full
+                     sequence length, exact and complete KV caching, and hybrid mod-
+                     eling, Eso-LMs achieve the state of the art on the speed-quality
+                     Pareto frontier for unconditional generation.
                </h4>
                <h4 class="subtitle has-text-centered">
                   <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LM (B) achieves up to <b>65× faster inference</b>  than MDLM and <b>3-4× faster inference</b> than BD3-LMs.
@@ -184,7 +177,7 @@
                   <ol>
                      <li> 
                         We propose a new framework for language modeling: one that fuses AR and 
-                        MDM paradigms and outperforms the previous hybrid approach, BD3-LMs.
+                        MDM paradigms and <b>outperforms the previous hybrid approach, Block Diffusion</b> (BD3-LMs).
                      </li>
                      <li>
                         Ours is the <strong>first approach to enable exact KV caching for MDMs</strong>, achieving up to 
@@ -318,7 +311,22 @@
             <img src="static/images/esolmb_seqmask.svg" alt="MY ALT TEXT" style="width: 60%; height: auto;"/>
          </div>
          <h4>Sampling</h4>
-         <p>Efficient generation of an example sequence:</p>
+         <p>Sampling from Eso-LMs proceeds in two phases: a <span style="color: rgb(255, 142, 0); font-weight: bold;">diffusion</span> 
+            phase followed by a <span style="color: rgb(72, 117, 44); font-weight: bold;">sequential</span> phase.
+                  During the <span style="color: rgb(255, 142, 0); font-weight: bold;">Diffusion</span> Phase, 
+                  Eso-LMs denoise one or more, potentially non-neighboring mask tokens 
+                  (<span style="color: rgb(183, 183, 183); font-weight: bold;">M</span>) per step, just like masked diffusion models. 
+                  During the <span style="color: rgb(72, 117, 44); font-weight: bold;">Sequential</span> Phase, 
+                  Eso-LMs denoise the remaining mask tokens one at a time from left to right, just like autoregressive models but conditioned on left and right contexts. 
+                  Eso-LM (B) allows for 
+                  <strong>KV caching in both phases</strong> using 
+                  <strong>a single unified KV cache</strong>: 
+                  <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> bounding boxes enclose 
+                  transformer cells building their KV cache; 
+                  a cell becomes <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> once its KV cache is built. 
+                  The sequences below the transformers depict tokens in their natural order.
+
+         </p>
          <img src="static/images/graphical_abstract_esolmb.svg" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
       </section>
       <section class="section" id="Experiments">
@@ -328,7 +336,7 @@
                <h4> Likelihood evaluation</h4>
                   <p>We train and evaluate on the One Billion Words (LM1B) dataset and OpenWebText (OWT).</p>
                   <div style="text-align: center;">
-                     <img src="static/images/likelihood.png" alt="MY ALT TEXT" style="width: 100%; height: auto;"/>
+                     <img src="static/images/likelihood.png" alt="MY ALT TEXT" style="width: 50%; height: auto;"/>
                   </div>
                <h4>Generation speed</h4>
                   <p>When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), Eso-LMs achieve up to 65× faster inference than MDLM and 3-4× faster inference than BD3-LMs:</p>
@@ -336,16 +344,15 @@
                      <img src="static/images/Graphical Abstract (speed).svg" alt="MY ALT TEXT" style="width: 30%; height: auto;"/>
                   </div>
                <h4>Generation quality</h4>
-                  <p>We use Genenerative Perplexity (Gen. PPL) to evaluate the quality of samples generated by models trained on OWT. Low Gen. PPL means high quality. Sequence length is 1024.</p>
-                  <p>To compare sampling efficiency, we also record the median sampling duration in seconds (across 5 trials) taken by each method to generate a single sample (i.e., batch size is 1).</p>
+                  <p>We use Mauve (\(\uparrow\)) to evaluate the quality of samples generated by models trained on OWT.</p>
                   <div style="text-align: center;">
-                     <img src="static/images/pareto_curve.png" alt="MY ALT TEXT" style="width: 50%; height: auto;"/>
+                     <img src="static/images/pareto_curve_mauve.pdf" alt="MY ALT TEXT" style="width: 50%; height: auto;"/>
                   </div>
                   <p>Eso-LMs set new SOTA on the sampling speed–quality Pareto frontier, redefining what’s possible:</p>
                   <ul>
-                     <li>MDLM-level perplexity at high speed</li>
-                     <li>AR-level perplexity when needed</li>
-                     <li>No mode collapse at low steps — unlike Block Diffusion</li>
+                     <li>MDLM-quality samples at high speed</li>
+                     <li>AR-quality samples when needed</li>
+                     <li>No mode collapse at low steps unlike Block Diffusion</li>
                   </ul>
             </div>
          </div>
