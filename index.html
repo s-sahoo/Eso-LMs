@@ -162,7 +162,7 @@
                      Pareto frontier for unconditional generation.
                </h4>
                <h4 class="subtitle has-text-centered">
-                  <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LM (B) achieves up to <b>65× faster inference</b>  than MDLM and <b>3-4× faster inference</b> than BD3-LMs.
+                  <u>Right:</u> When generating a sequence of length 8192 using the maximum possible number of function evaluations (NFEs = 8192), our flagship model Eso-LMs achieves up to <b>65× faster inference</b>  than MDLM and <b>3-4× faster inference</b> than BD3-LMs.
                </h4>
             </div>
          </div>
@@ -238,7 +238,7 @@
          <div class="content is-medium">
          <h2 class="title">Esoteric Language Models</h2>
          <p>
-            In Eso-LMs, some tokens are generated in parallel via MDMs and the rest sequentially in a left-to-right fashion. Here we introduce the variant Eso-LM (B). Refer to our paper for the other variant Eso-LM (A).
+            In Eso-LMs, some tokens are generated in parallel via MDMs and the rest sequentially in a left-to-right fashion. Here we introduce the variant Eso-LMs. Refer to our paper for the other variant Eso-LM (A).
          </p>
          <h4>Objective for training: ELBO</h4>
          <p>
@@ -318,7 +318,7 @@
                   (<span style="color: rgb(183, 183, 183); font-weight: bold;">M</span>) per step, just like masked diffusion models. 
                   During the <span style="color: rgb(72, 117, 44); font-weight: bold;">Sequential</span> Phase, 
                   Eso-LMs denoise the remaining mask tokens one at a time from left to right, just like autoregressive models but conditioned on left and right contexts. 
-                  Eso-LM (B) allows for 
+                  Eso-LMs allows for 
                   <strong>KV caching in both phases</strong> using 
                   <strong>a single unified KV cache</strong>: 
                   <span style="color: rgb(98, 148, 232); font-weight: bold;">blue</span> bounding boxes enclose 
