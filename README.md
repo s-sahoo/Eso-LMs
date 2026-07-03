@@ -105,13 +105,12 @@ This repository was built off of [DUO](https://github.com/s-sahoo/duo).
 
 ## Citation
 ```
-@misc{sahoo2025esotericlanguagemodels,
-      title={Esoteric Language Models}, 
-      author={Subham Sekhar Sahoo and Zhihan Yang and Yash Akhauri and Johnna Liu and Deepansha Singh and Zhoujun Cheng and Zhengzhong Liu and Eric Xing and John Thickstun and Arash Vahdat},
-      year={2025},
-      eprint={2506.01928},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2506.01928}, 
+@inproceedings{
+    sahoo2026esoteric,
+    title={Esoteric Language Models: A Family of Any-Order Diffusion {LLM}s},
+    author={Subham Sekhar Sahoo and Zhihan Yang and Yash Akhauri and Johnna Liu and Deepansha Singh and Zhoujun Cheng and Zhengzhong Liu and Eric P. Xing and John Thickstun and Arash Vahdat},
+    booktitle={Forty-third International Conference on Machine Learning},
+    year={2026},
+    url={https://openreview.net/forum?id=4C5lHAIWiF}
 }
 ```
